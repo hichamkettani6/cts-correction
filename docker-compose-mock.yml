@@ -1,0 +1,9 @@
+services:
+
+  inrim_cts_correction:
+
+    image: inrim_cts_correction:latest 
+    volumes:
+      - ./cts-correction:/app
+    ports:
+      - "80:80"
