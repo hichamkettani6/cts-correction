@@ -29,8 +29,9 @@ import numpy as np
 
 import plotly.express as px
 import pandas as pd
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 from fastapi.responses import HTMLResponse
+from typing import Annotated
 
 
 
@@ -75,7 +76,7 @@ for name in files_paths:
 # In[56]:
 
 
-x=[float(i) for i in x_values]
+x=[float(i) for i in x_values] # MJD
 x_unix=[(float(i)-40587)*86400 for i in x_values] # convert from MJD to unix 
 x_unix_int=[math.modf(i) for i in x_unix]
 y=[float(j) for j in y_values]
@@ -107,6 +108,23 @@ async def get_plot():
     fig2 = px.line(df2, x='date [s]', y='utc(it) - hrog output [s]', title='hrog output with cts corrections')
 
     return fig1.to_html(full_html=False) + fig2.to_html(full_html=False)
+
+
+@app.get("/graph-data", response_class=HTMLResponse)
+async def get_graph_data(dtime_start: Annotated[str, Query(pattern='^[0-9]{4}-((0[0-9])|(1[0-2]))-(([0-2][0-9])|3[0-1]) [0-5][0-9]:[0-5][0-9]:[0-5][0-9]$')] = x_date[0],
+                          dtime_end: Annotated[str, Query(pattern='^[0-9]{4}-((0[0-9])|(1[0-2]))-(([0-2][0-9])|3[0-1]) [0-5][0-9]:[0-5][0-9]:[0-5][0-9]$')] = x_date[-1]):
+
+    start: int = x_date.index(dtime_start)
+    end: int = x_date.index(dtime_end)
+
+    df = pd.DataFrame({
+        'date [s]': x_date[start: end+1:600],
+        'utc(it) - hrog output [s]': y[start: end+1:600]
+    })
+
+    fig = px.line(df, x='date [s]', y='utc(it) - hrog output [s]', title='hrog output with cts corrections', markers=True)
+
+    return fig.to_html(full_html=False)
 
 
 # In[57]:
