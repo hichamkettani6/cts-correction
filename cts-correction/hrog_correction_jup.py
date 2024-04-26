@@ -38,7 +38,7 @@ from typing import Annotated
 # In[2]:
 
 
-DATA_PATH="./app/data"
+DATA_PATH="/app/data"
 
 #files = sorted(os.listdir(DATA_PATH))
 #print(files)
@@ -95,17 +95,16 @@ app = FastAPI()
 
 @app.get("/", response_class=HTMLResponse)
 async def get_plot():
-    df1 = pd.DataFrame({
-        'time [MJD]': x[::3600],
-        'utc(it) - hrog output [s]': y[::3600]
-    })
-    fig1 = px.line(df1, x='time [MJD]', y='utc(it) - hrog output [s]', title='hrog output with cts corrections')
 
-    df2 = pd.DataFrame({
+    df = pd.DataFrame({
+        'time [MJD]': x[::3600],
         'date [s]': x_date[::3600],
         'utc(it) - hrog output [s]': y[::3600]
     })
-    fig2 = px.line(df2, x='date [s]', y='utc(it) - hrog output [s]', title='hrog output with cts corrections')
+
+    fig1 = px.line(df, x='time [MJD]', y='utc(it) - hrog output [s]', title='hrog output with cts corrections')
+
+    fig2 = px.line(df, x='date [s]', y='utc(it) - hrog output [s]', title='hrog output with cts corrections')
 
     return fig1.to_html(full_html=False) + fig2.to_html(full_html=False)
 
@@ -117,8 +116,8 @@ async def get_graph_data(dtime_start: Annotated[str, Query(pattern='^[0-9]{4}-((
     try:
         start: int = x_date.index(dtime_start)
         end: int = x_date.index(dtime_end)
-    except ValueError:
-        raise HTTPException(status_code=404, detail="The dates are not compatible!")
+    except ValueError as error:
+        raise HTTPException(status_code=404, detail=f"The dates are not compatible! {error}")
 
 
     df = pd.DataFrame({
@@ -127,6 +126,14 @@ async def get_graph_data(dtime_start: Annotated[str, Query(pattern='^[0-9]{4}-((
     })
 
     fig = px.line(df, x='date [s]', y='utc(it) - hrog output [s]', title='hrog output with cts corrections', markers=True)
+    fig.update_layout(
+       title={
+           'x':0.5,
+           'xanchor':'center',
+           'yanchor':'top'},
+       title_font=dict(size=24),
+       plot_bgcolor='lavender')
+
 
     return fig.to_html(full_html=False)
 
