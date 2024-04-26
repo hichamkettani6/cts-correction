@@ -29,7 +29,7 @@ import numpy as np
 
 import plotly.express as px
 import pandas as pd
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, HTTPException
 from fastapi.responses import HTMLResponse
 from typing import Annotated
 
@@ -114,8 +114,12 @@ async def get_plot():
 async def get_graph_data(dtime_start: Annotated[str, Query(pattern='^[0-9]{4}-((0[0-9])|(1[0-2]))-(([0-2][0-9])|3[0-1]) [0-5][0-9]:[0-5][0-9]:[0-5][0-9]$')] = x_date[0],
                           dtime_end: Annotated[str, Query(pattern='^[0-9]{4}-((0[0-9])|(1[0-2]))-(([0-2][0-9])|3[0-1]) [0-5][0-9]:[0-5][0-9]:[0-5][0-9]$')] = x_date[-1]):
 
-    start: int = x_date.index(dtime_start)
-    end: int = x_date.index(dtime_end)
+    try:
+        start: int = x_date.index(dtime_start)
+        end: int = x_date.index(dtime_end)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="The dates are not compatible!")
+
 
     df = pd.DataFrame({
         'date [s]': x_date[start: end+1:600],
