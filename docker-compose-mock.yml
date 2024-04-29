@@ -5,5 +5,7 @@ services:
     image: inrim_cts_correction:latest 
     volumes:
       - ./cts-correction:/app
+      - ./templates:/templates
+      - ./static:/static
     ports:
       - "80:80"

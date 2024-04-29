@@ -1,0 +1,215 @@
+
+<form class="form-horizontal">
+    <!-- Experiment select -->
+   <!--
+    <div class="form-group">
+        <label class="col-sm-2" for="exp">Experiment</label>
+        <div class="col-sm-10">
+            <select id="select-exp" class="selectpicker form-control" title="Choose a experiment" data-width="fit">
+                {% for exp in experiments %}
+                    <option value="{{ exp.id }},{{ exp.time_zone }}">{{ exp.title }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>>
+    -->
+    <!-- From datetime picker -->
+    <div class="form-group">
+        <label class="col-sm-2">From</label>
+        <div class="col-sm-10">
+            <div class="row">
+                <div class="col-sm-7 col-xs-7">
+                    <div id="datepickFromContainer">
+                    <input type="text" class="form-control input-small" id="datepickFrom" placeholder="From Date" autocomplete="off">
+                    </div>
+                </div>
+                <div class="col-sm-5 col-xs-5">
+                    <div class="input-group bootstrap-timepicker timepicker">
+                        <input type="text" class="form-control input-small" id="timepickFrom">
+                        <span class="input-group-addon"><i class="glyphicon glyphicon-time"></i></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- To datetime picker -->
+    <div class="form-group">
+        <label class="col-sm-2">To</label>
+        <div class="col-sm-10">
+            <div class="row">
+                <div class="col-sm-7 col-xs-7">
+                    <div id="datepickToContainer">
+                        <input type="text" class="form-control input-small" id="datepickTo" placeholder="To Date" autocomplete="off">
+                    </div>
+                </div>
+                <div class="col-sm-5 col-xs-5">
+                    <div class="input-group bootstrap-timepicker timepicker">
+                        <input type="text" class="form-control input-small" id="timepickTo">
+                        <span class="input-group-addon"><i class="glyphicon glyphicon-time"></i></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Timezone, Event Datetime Range, Event Missing Periods -->
+    <div class="form-group">
+        <div id="time-info" class="col-sm-offset-2 col-sm-10 weak"></div>
+    </div>
+    <!-- Buttons -->
+    <div class="form-group">
+        <div class="col-sm-offset-2 col-sm-10">
+            <div class="btn-group">
+                <button class="btn btn-primary" id="generate-button">Generate</button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<div id="graph"></div>
+
+
+
+
+<script src="../static/js/bootstrap-datepicker.min.js"></script>
+<script src="../static/js/bootstrap-timepicker.min.js"></script>
+<script src="../static/js/plotly.js"></script>
+<script src="../static/js/jquery-3.1.0.min.js"></script>
+<script src="../static/js/plotly.min.js"></script>
+<script src="../static/js/jquery-ui.min.js"></script>
+<script src="../static/js/moment.min.js"></script>
+<script src="../static/js/moment-timezone.min.js"></script>
+
+
+<script>
+    'use strict';
+
+    let exp = null;
+    let timezone = null;
+/*
+    $('#select-exp').on('change', function() {
+        console.log('select-exp change')
+        console.log('exp', $('#select-exp').val());
+
+        exp = parseInt($('#select-exp').val().split(',')[0]);
+        timezone = $('#select-exp').val().split(',')[1];
+        console.log(exp, timezone);
+
+        // 実験の日時範囲を取得
+        $.postJSON('/api_experiment_range', {
+            experiment: exp
+        }).done(function(json) {
+            console.log(json);
+
+            let end = new Date(json.end);
+            console.log(end.getHours());
+            console.log(end.getMinutes());
+            console.log(end.getSeconds());
+            console.log(end.getMilliseconds());
+            //if (end.getHours() != 0 || end.getMinutes() != 0 || end.getSeconds() != 0 || end.getMilliseconds() != 0) {
+            //    console.log('add')
+            //    end.setDate(end.getDate() + 1);
+            //}
+            //end.setSecond(end.getSecond() - 1);
+
+            $('#datepickFrom').datepicker({
+                format: 'yyyy-mm-dd',
+                startDate: new Date(json.start),
+                endDate: new Date(json.end),
+                orientation: 'bottom',
+            });
+
+            $('#datepickTo').datepicker({
+                format: 'yyyy-mm-dd',
+                startDate: new Date(json.start),
+                endDate: new Date(end),
+                orientation: 'bottom',
+            });
+
+            $("#timepickFrom").timepicker({
+                maxHours:24,
+                showMeridian:false,
+                showInputs:false,
+                showSeconds:true,
+                minuteStep:1,
+                secondStep:10,
+                defaultTime:'00:00:00'
+            });
+
+            $("#timepickTo").timepicker({
+                maxHours:24,
+                showMeridian:false,
+                showInputs:false,
+                showSeconds:true,
+                minuteStep:1,
+                secondStep:10,
+                defaultTime:'00:00:00'
+            });
+
+            $('#datepickFrom').prop('disabled', false);
+            $('#datepickTo').prop('disabled', false);
+            $('#timepickFrom').prop('disabled', false);
+            $('#timepickTo').prop('disabled', false);
+            $('#generate-button').prop('disabled', false);
+
+            let $info = $('#time-info');
+            $info.empty();
+            $info.append(`<div>Range: ${ datetimeSecFormat(json.start, timezone) } - ${ datetimeSecFormat(json.end, timezone) }</div>`);
+        }).fail(function() {
+            console.log('fail');
+        })
+    })
+    */
+
+    $('#generate-button').on('click', function() {
+        try {
+            $('#generate-button').prop('disabled', true);
+
+            console.log('generate');
+
+            console.log(`exp: ${exp}`);
+            console.log(`from date: ${$("#datepickFrom").datepicker().val()}`);
+            console.log(`from time: ${$("#timepickFrom").val()}`);
+            console.log(`  to date: ${$("#datepickTo").datepicker().val()}`);
+            console.log(`  to time: ${$("#timepickTo").val()}`);
+
+            console.log(timezone);
+
+            let fromDate = moment.tz(`${$("#datepickFrom").datepicker().val()} ${$("#timepickFrom").val()}`, 'YYYY-M-D H:m:s', timezone)
+            console.log(fromDate.isValid());
+            //console.log(datetimeSecFormat(fromDate, timezone));
+            console.log(fromDate.format());
+
+            let toDate = moment.tz(`${$("#datepickTo").datepicker().val()} ${$("#timepickTo").val()}`, 'YYYY-M-D H:m:s', timezone)
+            console.log(toDate.isValid());
+            //console.log(datetimeSecFormat(toDate, timezone));
+            console.log(toDate.format());
+
+            $.get('/graph-data', {
+                dtime_start: fromDate.format(),
+                dtime_end: toDate.format()
+            }).done(function(json) {
+                console.log('done', json);
+
+                $('#graph').empty();
+                json.list.forEach(function(graph_data, index) {
+                    console.log(index, graph_data);
+                    let elemId = `graph${index}`;
+                    $('#graph').append($(`<div id="${elemId}"></div>`));
+                    Plotly.newPlot(elemId, graph_data.data, graph_data.layout);
+                });
+            }).fail(function() {
+                console.log('fail');
+            }).always(function() {
+                $('#generate-button').prop('disabled', false);
+            });
+
+        } catch (error) {
+            console.error(error);
+            $('#generate-button').prop('disabled', false);
+        }
+
+        return false;
+    });
+
+</script>
+    

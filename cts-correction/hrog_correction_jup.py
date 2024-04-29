@@ -29,9 +29,11 @@ import numpy as np
 
 import plotly.express as px
 import pandas as pd
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, Query, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from typing import Annotated
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 
 
 
@@ -86,6 +88,7 @@ y=[float(j) for j in y_values]
 
 
 x_date=[datetime.fromtimestamp(k).strftime('%Y-%m-%d %H:%M:%S') for k in x_unix]
+x_date_TZ = ['T'.join(date.split()) + 'Z' for date in x_date]
 # from linux seconds to date
 
 
@@ -103,30 +106,7 @@ async def get_plot():
     })
 
     fig1 = px.line(df, x='time [MJD]', y='utc(it) - hrog output [s]', title='hrog output with cts corrections')
-
-    fig2 = px.line(df, x='date [s]', y='utc(it) - hrog output [s]', title='hrog output with cts corrections')
-
-    return fig1.to_html(full_html=False) + fig2.to_html(full_html=False)
-
-
-@app.get("/graph-data", response_class=HTMLResponse)
-async def get_graph_data(dtime_start: Annotated[str, Query(pattern='^[0-9]{4}-((0[0-9])|(1[0-2]))-(([0-2][0-9])|3[0-1]) [0-5][0-9]:[0-5][0-9]:[0-5][0-9]$')] = x_date[0],
-                          dtime_end: Annotated[str, Query(pattern='^[0-9]{4}-((0[0-9])|(1[0-2]))-(([0-2][0-9])|3[0-1]) [0-5][0-9]:[0-5][0-9]:[0-5][0-9]$')] = x_date[-1]):
-
-    try:
-        start: int = x_date.index(dtime_start)
-        end: int = x_date.index(dtime_end)
-    except ValueError as error:
-        raise HTTPException(status_code=404, detail=f"The dates are not compatible! {error}")
-
-
-    df = pd.DataFrame({
-        'date [s]': x_date[start: end+1:600],
-        'utc(it) - hrog output [s]': y[start: end+1:600]
-    })
-
-    fig = px.line(df, x='date [s]', y='utc(it) - hrog output [s]', title='hrog output with cts corrections', markers=True)
-    fig.update_layout(
+    fig1.update_layout(
        title={
            'x':0.5,
            'xanchor':'center',
@@ -134,8 +114,51 @@ async def get_graph_data(dtime_start: Annotated[str, Query(pattern='^[0-9]{4}-((
        title_font=dict(size=24),
        plot_bgcolor='lavender')
 
+    fig2 = px.line(df, x='date [s]', y='utc(it) - hrog output [s]', title='hrog output with cts corrections')
+    fig2.update_layout(
+       title={
+           'x':0.5,
+           'xanchor':'center',
+           'yanchor':'top'},
+       title_font=dict(size=24),
+       plot_bgcolor='lavender')
 
-    return fig.to_html(full_html=False)
+    return fig1.to_html(full_html=False) + fig2.to_html(full_html=False)
+
+
+@app.get("/graph-data")
+async def get_graph_data(dtime_start: Annotated[str, Query(pattern='^[0-9]{4}-((0[0-9])|(1[0-2]))-(([0-2][0-9])|3[0-1])T[0-5][0-9]:[0-5][0-9]:[0-5][0-9]Z$')] = x_date_TZ[0],
+                         dtime_end: Annotated[str, Query(pattern='^[0-9]{4}-((0[0-9])|(1[0-2]))-(([0-2][0-9])|3[0-1])T[0-5][0-9]:[0-5][0-9]:[0-5][0-9]Z$')] = x_date_TZ[-1]):
+
+   try:
+       start: int = x_date_TZ.index(dtime_start)
+       end: int = x_date_TZ.index(dtime_end)
+   except ValueError as error:
+       raise HTTPException(status_code=404, detail=f"The dates are not compatible! {error}")
+
+   df = {
+       'data':[{
+           'x': x_date_TZ[start: end+1:600],
+           'y': y[start: end+1:600]
+           }],
+       'layout':{
+           "title": "Graph 1"
+       }
+   }
+      
+   return {"list": [df]}
+
+
+#app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
+
+@app.get("/graph-data-html", response_class=HTMLResponse)
+async def get_graph_data_html(request: Request):
+  
+   return templates.TemplateResponse(request=request, name="temp.html")
+
+
+
 
 
 # In[57]:
