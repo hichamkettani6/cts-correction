@@ -1,0 +1,25 @@
+
+<ul class="nav navbar-nav pull-right">
+    {% if request.user.is_authenticated %}
+        <li>
+            <a href="{% url 'userena_profile_edit' request.user.username %}"><i class="fa fa-user"></i> {{ request.user.username }}</a>
+        </li>
+        <!--li>
+            <a href="{% url 'userena_profile_edit' request.user.username %}"><i class="fa fa-cog"></i> {% trans "Settings" %}</a>
+        </li-->
+        <li>
+            <a id="account_logout" href="{% url 'userena_signout' %}"><i class="fa fa-power-off"></i> {% trans "Log out" %}</a>
+        </li>
+    {% else %}
+        <li><a href="{% url 'userena_signin' %}"><i class="fa fa-power-off"></i> {% trans "Log in" %}</a></li>
+        {% comment %}
+        {% if ACCOUNT_OPEN_SIGNUP %}
+            <li><a href="{% url 'account_signup' %}">{% trans "Sign up" %}</a></li>
+        {% endif %}
+        {% endcomment %}
+    {% endif %}
+</ul>
+
+<form id="accountLogOutForm" style="display: none;" action="" method="POST">
+    {% csrf_token %}
+</form>

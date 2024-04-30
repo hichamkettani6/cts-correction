@@ -149,13 +149,13 @@ async def get_graph_data(dtime_start: Annotated[str, Query(pattern='^[0-9]{4}-((
    return {"list": [df]}
 
 
-#app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 @app.get("/graph-data-html", response_class=HTMLResponse)
 async def get_graph_data_html(request: Request):
   
-   return templates.TemplateResponse(request=request, name="temp.html")
+   return templates.TemplateResponse(request=request, name="index.html")
 
 
 

@@ -1,7 +1,6 @@
 {% extends "base.html" %}
 
 {% block content %}
-{% load static %}
 
 <legend>Generate graphs for a specified time period.</legend>
 
@@ -28,12 +27,12 @@
             <div class="row">
                 <div class="col-sm-7 col-xs-7">
                     <div id="datepickFromContainer">
-                    <input type="text" class="form-control input-small" id="datepickFrom" placeholder="From Date" autocomplete="off" disabled>
+                    <input type="text" class="form-control input-small" id="datepickFrom" placeholder="From Date" autocomplete="on">
                     </div>
                 </div>
                 <div class="col-sm-5 col-xs-5">
                     <div class="input-group bootstrap-timepicker timepicker">
-                        <input type="text" class="form-control input-small" id="timepickFrom" disabled>
+                        <input type="text" class="form-control input-small" id="timepickFrom">
                         <span class="input-group-addon"><i class="glyphicon glyphicon-time"></i></span>
                     </div>
                 </div>
@@ -47,12 +46,12 @@
             <div class="row">
                 <div class="col-sm-7 col-xs-7">
                     <div id="datepickToContainer">
-                        <input type="text" class="form-control input-small" id="datepickTo" placeholder="To Date" autocomplete="off" disabled>
+                        <input type="text" class="form-control input-small" id="datepickTo" placeholder="To Date" autocomplete="on">
                     </div>
                 </div>
                 <div class="col-sm-5 col-xs-5">
                     <div class="input-group bootstrap-timepicker timepicker">
-                        <input type="text" class="form-control input-small" id="timepickTo" disabled>
+                        <input type="text" class="form-control input-small" id="timepickTo">
                         <span class="input-group-addon"><i class="glyphicon glyphicon-time"></i></span>
                     </div>
                 </div>
@@ -67,7 +66,7 @@
     <div class="form-group">
         <div class="col-sm-offset-2 col-sm-10">
             <div class="btn-group">
-                <button class="btn btn-primary" id="generate-button" disabled>Generate</button>
+                <button class="btn btn-primary" id="generate-button">Generate</button>
             </div>
         </div>
     </div>
@@ -75,10 +74,16 @@
 
 <div id="graph"></div>
 
-<script src="{% static 'js/bootstrap-datepicker.min.js' %}"></script>
-<script src="{% static 'js/bootstrap-timepicker.min.js' %}"></script>
-<script src="{% static 'js/plotly.js' %}"></script>
-<script src="{% static 'js/jquery-3.1.9.min.js' }"></script> 
+<script src="{{ url_for('static', path='/js/bootstrap-datepicker.min.js') }}"></script>
+<script src="{{ url_for('static', path='/js/bootstrap-timepicker.min.js') }}"></script>
+<script src="{{ url_for('static', path='/js/plotly.js') }}"></script>
+<script src="{{ url_for('static', path='/js/jquery-3.1.0.min.js') }}"></script>
+<script src="{{ url_for('static', path='/js/plotly.min.js') }}"></script>
+<script src="{{ url_for('static', path='/js/jquery-ui.min.js') }}"></script>
+<script src="{{ url_for('static', path='/js/moment.min.js') }}"></script>
+<script src="{{ url_for('static', path='/js/moment-timezone.min.js') }}"></script>
+
+
 <script>
     'use strict';
 
@@ -172,21 +177,20 @@
 
             console.log(timezone);
 
-            let fromDate = moment.tz(`${$("#datepickFrom").datepicker().val()} ${$("#timepickFrom").val()}`, 'YYYY-M-D H:m:s', timezone)
+
+            let fromDate = moment.tz(`${$.datepicker.formatDate("yy-mm-dd", $("#datepickFrom").datepicker("getDate"))} ${$("#timepickFrom").val()}`, 'YYYY-M-D H:m:s', timezone)
             console.log(fromDate.isValid());
             //console.log(datetimeSecFormat(fromDate, timezone));
             console.log(fromDate.format());
 
-            let toDate = moment.tz(`${$("#datepickTo").datepicker().val()} ${$("#timepickTo").val()}`, 'YYYY-M-D H:m:s', timezone)
+            let toDate = moment.tz(`${$("#datepickTo").datepicker("option", "dateFormat", "yy-mm-dd").val()} ${$("#timepickTo").val()}`, 'YYYY-M-D H:m:s', timezone)
             console.log(toDate.isValid());
             //console.log(datetimeSecFormat(toDate, timezone));
             console.log(toDate.format());
 
-            $.postJSON('/api_get_graphs', {
-                experiment: exp,
-                graph_type: 'SEC',
-                from: fromDate.format(),
-                to: toDate.format()
+            $.getJSON('/graph-data', {
+                dtime_start: fromDate.format(),
+                dtime_end: toDate.format()
             }).done(function(json) {
                 console.log('done', json);
 
