@@ -130,23 +130,29 @@ async def get_plot():
 async def get_graph_data(dtime_start: Annotated[str, Query(pattern='^[0-9]{4}-((0[0-9])|(1[0-2]))-(([0-2][0-9])|3[0-1])T[0-5][0-9]:[0-5][0-9]:[0-5][0-9]Z$')] = x_date_TZ[0],
                          dtime_end: Annotated[str, Query(pattern='^[0-9]{4}-((0[0-9])|(1[0-2]))-(([0-2][0-9])|3[0-1])T[0-5][0-9]:[0-5][0-9]:[0-5][0-9]Z$')] = x_date_TZ[-1]):
 
-   try:
-       start: int = x_date_TZ.index(dtime_start)
-       end: int = x_date_TZ.index(dtime_end)
-   except ValueError as error:
-       raise HTTPException(status_code=404, detail=f"The dates are not compatible! {error}")
+    try:
+        start: int = x_date_TZ.index(dtime_start)
+        end: int = x_date_TZ.index(dtime_end)
+    except ValueError as error:
+        raise HTTPException(status_code=404, detail=f"The dates are not compatible! {error}")
 
-   df = {
-       'data':[{
+    df = {
+        'data':[{
            'x': x_date_TZ[start: end+1:600],
            'y': y[start: end+1:600]
            }],
        'layout':{
-           "title": "Graph 1"
-       }
-   }
+           "title": "hrog output with cts corrections",
+           "xaxis": {
+               "title": 'date [s]',
+            },
+            "yaxis": {
+                "title": 'utc(it) - hrog output [s]',
+            }
+        }
+    }
       
-   return {"list": [df]}
+    return {"list": [df]}
 
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -155,7 +161,7 @@ templates = Jinja2Templates(directory="templates")
 @app.get("/graph-data-html", response_class=HTMLResponse)
 async def get_graph_data_html(request: Request):
   
-   return templates.TemplateResponse(request=request, name="index.html")
+   return templates.TemplateResponse(request=request, name="graph_corrections.html")
 
 
 

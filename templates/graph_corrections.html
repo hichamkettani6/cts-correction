@@ -163,6 +163,11 @@
         })
     })
 
+    $(document).ready(function() {
+        $('#datepickFrom').datepicker({dateFormat: 'yy-mm-dd'});
+        $('#datepickTo').datepicker({dateFormat: 'yy-mm-dd'});
+    })
+
     $('#generate-button').on('click', function() {
         try {
             $('#generate-button').prop('disabled', true);
@@ -178,12 +183,12 @@
             console.log(timezone);
 
 
-            let fromDate = moment.tz(`${$.datepicker.formatDate("yy-mm-dd", $("#datepickFrom").datepicker("getDate"))} ${$("#timepickFrom").val()}`, 'YYYY-M-D H:m:s', timezone)
+            let fromDate = moment.tz(`${$("#datepickFrom").datepicker().val()} ${$("#timepickFrom").val()}`, 'YYYY-M-D H:m:s', timezone)
             console.log(fromDate.isValid());
             //console.log(datetimeSecFormat(fromDate, timezone));
             console.log(fromDate.format());
 
-            let toDate = moment.tz(`${$("#datepickTo").datepicker("option", "dateFormat", "yy-mm-dd").val()} ${$("#timepickTo").val()}`, 'YYYY-M-D H:m:s', timezone)
+            let toDate = moment.tz(`${$("#datepickTo").datepicker().val()} ${$("#timepickTo").val()}`, 'YYYY-M-D H:m:s', timezone)
             console.log(toDate.isValid());
             //console.log(datetimeSecFormat(toDate, timezone));
             console.log(toDate.format());
