@@ -159,9 +159,18 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 @app.get("/graph-data-html", response_class=HTMLResponse)
-async def get_graph_data_html(request: Request):
-  
-   return templates.TemplateResponse(request=request, name="graph_corrections.html")
+async def get_graph_data_html(request: Request,
+                              dtime_start: Annotated[str | None, Query(pattern='^[0-9]{4}-((0[0-9])|(1[0-2]))-(([0-2][0-9])|3[0-1])T[0-5][0-9]:[0-5][0-9]:[0-5][0-9]Z$')] = None,
+                              dtime_end: Annotated[str | None, Query(pattern='^[0-9]{4}-((0[0-9])|(1[0-2]))-(([0-2][0-9])|3[0-1])T[0-5][0-9]:[0-5][0-9]:[0-5][0-9]Z$')] = None):
+   
+    if dtime_start or dtime_end:
+        dateFrom, timeFrom = dtime_start.strip('Z').split('T')
+        dateTo, timeTo = dtime_end.strip('Z').split('T')
+        return templates.TemplateResponse(request=request, name="graph_corrections.html",
+                                          context={"dateFrom": dateFrom, "timeFrom": timeFrom, 
+                                                   "dateTo": dateTo, "timeTo":timeTo})
+    
+    return templates.TemplateResponse(request=request, name="graph_corrections.html")
 
 
 

@@ -1,4 +1,4 @@
-
+{#
 <ul class="nav navbar-nav pull-right">
     {% if request.user.is_authenticated %}
         <li>
@@ -23,3 +23,4 @@
 <form id="accountLogOutForm" style="display: none;" action="" method="POST">
     {% csrf_token %}
 </form>
+#}

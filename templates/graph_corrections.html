@@ -27,12 +27,12 @@
             <div class="row">
                 <div class="col-sm-7 col-xs-7">
                     <div id="datepickFromContainer">
-                    <input type="text" class="form-control input-small" id="datepickFrom" placeholder="From Date" autocomplete="on">
+                    <input type="text" value="{{ dateFrom }}" class="form-control input-small" id="datepickFrom" placeholder="From Date" autocomplete="on">
                     </div>
                 </div>
                 <div class="col-sm-5 col-xs-5">
                     <div class="input-group bootstrap-timepicker timepicker">
-                        <input type="text" class="form-control input-small" id="timepickFrom">
+                        <input type="time" value="{{ timeFrom }}" step="1" class="form-control input-small" id="timepickFrom">
                         <span class="input-group-addon"><i class="glyphicon glyphicon-time"></i></span>
                     </div>
                 </div>
@@ -46,12 +46,12 @@
             <div class="row">
                 <div class="col-sm-7 col-xs-7">
                     <div id="datepickToContainer">
-                        <input type="text" class="form-control input-small" id="datepickTo" placeholder="To Date" autocomplete="on">
+                        <input type="text" value="{{ dateTo }}" class="form-control input-small" id="datepickTo" placeholder="To Date" autocomplete="on">
                     </div>
                 </div>
                 <div class="col-sm-5 col-xs-5">
                     <div class="input-group bootstrap-timepicker timepicker">
-                        <input type="text" class="form-control input-small" id="timepickTo">
+                        <input type="time" value="{{ timeTo }}" step="1" class="form-control input-small" id="timepickTo">
                         <span class="input-group-addon"><i class="glyphicon glyphicon-time"></i></span>
                     </div>
                 </div>
@@ -166,6 +166,14 @@
     $(document).ready(function() {
         $('#datepickFrom').datepicker({dateFormat: 'yy-mm-dd'});
         $('#datepickTo').datepicker({dateFormat: 'yy-mm-dd'});
+
+        var dateFrom = $("#datepickFrom").val();
+        var dateTo = $("#datepickTo").val();
+        var timeFrom = $("#timepickFrom").val();
+        var timeTo = $("#timepickTo").val();
+
+        if (dateFrom && dateTo && timeFrom && timeTo)
+            $("#generate-button").trigger('click'); 
     })
 
     $('#generate-button').on('click', function() {
