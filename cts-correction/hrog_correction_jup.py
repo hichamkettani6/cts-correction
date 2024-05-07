@@ -34,13 +34,21 @@ from fastapi.responses import HTMLResponse
 from typing import Annotated
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+#import requests
+import json
+from model import Data
+from compress_json import compress, decompress
+from sql_util import *
+
+
 
 
 
 # In[2]:
 
 
-DATA_PATH="/app/data"
+DATA_PATH = "/app/data/todo"
+DES_DATA_PATH = "/app/data/done"
 
 #files = sorted(os.listdir(DATA_PATH))
 #print(files)
@@ -55,20 +63,73 @@ files_paths = sorted(Path(DATA_PATH).iterdir(), key=os.path.getmtime)
 
 # In[3]:
 
+app = FastAPI()
 
-x_values = list()
-y_values = list()
-for name in files_paths:
-    with open(name) as file:
-        #reader = csv.reader(filter(lambda row: row[0]!='#', file), delimiter=' ')
-        #print(reader)
-        lines = file.readlines()
-        for line in lines:
-            line = line.strip()
-            if not line.startswith("#"):
+
+@app.get("/write_toDB")
+async def write_data_toDB():
+    createDB()
+
+    data = Data()
+
+    for path in files_paths:
+        
+        with open(path) as file:
+            #reader = csv.reader(filter(lambda row: row[0]!='#', file), delimiter=' ')
+            #print(reader)
+            lines = file.readlines()
+            for line in lines:
+                if line.startswith("#"):
+                    continue
+
+                line = line.strip()
                 x, y = line.split()
-                x_values.append(x)
-                y_values.append(y)
+                x_unix = (float(x)-40587)*86400
+                date = datetime.fromtimestamp(x_unix).strftime('%Y-%m-%d %H:%M:%S')
+                data.dates.append('T'.join(date.split()) + 'Z')
+                data.displacements.append(float(y))
+            
+        fillDB(zip(data.dates, data.displacements))
+                
+    return {"status": "DB createad!"}
+
+
+#using compress-json..
+@app.get("/read")
+async def read_data(dtime_start: str, dtime_end: str):
+
+    start_date = dtime_start.split('T')[0].replace('-', '')
+    end_date = dtime_end.split('T')[0].replace('-', '')
+
+    data = Data()
+
+    for path in [p for p in files_paths if start_date <= str(int(p.name.split('_')[2])-1) <= end_date]: # use binary search?!
+        with open(path) as file:
+            #reader = csv.reader(filter(lambda row: row[0]!='#', file), delimiter=' ')
+            #print(reader)
+            lines = file.readlines()
+            for line in lines:
+                if line.startswith('#'):
+                    continue
+
+                line = line.strip()
+                x, y = line.split()
+                x_unix = (float(x)-40587)*86400
+                
+                date = datetime.fromtimestamp(x_unix).strftime('%Y-%m-%d %H:%M:%S')
+                
+                if str(int(path.name.split('_')[2])-1) == start_date and \
+                        date.split()[1] < dtime_start.strip('Z').split('T')[1]:
+                    continue
+                
+                if str(int(path.name.split('_')[2])-1) == end_date and \
+                        date.split()[1] > dtime_end.strip('Z').split('T')[1]:
+                    break
+
+                data.dates.append('T'.join(date.split()) + 'Z')
+                data.displacements.append(float(y))
+
+    return {"dates": data.dates, "displacements": data.displacements}
 
 
 #print(x_values)
@@ -78,22 +139,20 @@ for name in files_paths:
 # In[56]:
 
 
-x=[float(i) for i in x_values] # MJD
-x_unix=[(float(i)-40587)*86400 for i in x_values] # convert from MJD to unix 
-x_unix_int=[math.modf(i) for i in x_unix]
-y=[float(j) for j in y_values]
+#x=[float(i) for i in x_values] # MJD
+#x_unix=[(float(i)-40587)*86400 for i in x_values] # convert from MJD to unix 
+#x_unix_int=[math.modf(i) for i in x_unix]
+#y=[float(j) for j in y_values]
 
 
 # In[54]:
 
 
-x_date=[datetime.fromtimestamp(k).strftime('%Y-%m-%d %H:%M:%S') for k in x_unix]
-x_date_TZ = ['T'.join(date.split()) + 'Z' for date in x_date]
+#x_date=[datetime.fromtimestamp(k).strftime('%Y-%m-%d %H:%M:%S') for k in x_unix]
+#x_date_TZ = ['T'.join(date.split()) + 'Z' for date in x_date]
 # from linux seconds to date
 
 
-
-app = FastAPI()
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -127,19 +186,19 @@ async def get_plot():
 
 
 @app.get("/graph-data")
-async def get_graph_data(dtime_start: Annotated[str, Query(pattern='^[0-9]{4}-((0[0-9])|(1[0-2]))-(([0-2][0-9])|3[0-1])T[0-5][0-9]:[0-5][0-9]:[0-5][0-9]Z$')] = x_date_TZ[0],
-                         dtime_end: Annotated[str, Query(pattern='^[0-9]{4}-((0[0-9])|(1[0-2]))-(([0-2][0-9])|3[0-1])T[0-5][0-9]:[0-5][0-9]:[0-5][0-9]Z$')] = x_date_TZ[-1]):
+async def get_graph_data(dtime_start: Annotated[str | None, Query(pattern='^[0-9]{4}-((0[0-9])|(1[0-2]))-(([0-2][0-9])|3[0-1])T[0-5][0-9]:[0-5][0-9]:[0-5][0-9]Z$')],
+                         dtime_end: Annotated[str | None, Query(pattern='^[0-9]{4}-((0[0-9])|(1[0-2]))-(([0-2][0-9])|3[0-1])T[0-5][0-9]:[0-5][0-9]:[0-5][0-9]Z$')]):
 
-    try:
-        start: int = x_date_TZ.index(dtime_start)
-        end: int = x_date_TZ.index(dtime_end)
-    except ValueError as error:
-        raise HTTPException(status_code=404, detail=f"The dates are not compatible! {error}")
 
-    df = {
+    data = queryFromDB(dtime_start, dtime_end)
+
+    x_date_TZ = data.get("dates")  
+    y = data.get("displacements")
+
+    df = {  
         'data':[{
-           'x': x_date_TZ[start: end+1:600],
-           'y': y[start: end+1:600]
+           'x': x_date_TZ,
+           'y': y
            }],
        'layout':{
            "title": "hrog output with cts corrections",

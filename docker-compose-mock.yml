@@ -2,10 +2,12 @@ services:
 
   inrim_cts_correction:
 
-    image: inrim_cts_correction:latest 
+    image: cts_correction:latest 
     volumes:
       - ./cts-correction:/app
       - ./templates:/templates
       - ./static:/static
     ports:
       - "80:80"
+    environment:
+      - TZ="Europe/Rome"
