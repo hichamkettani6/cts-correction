@@ -1,5 +1,6 @@
 import sqlite3
 from typing import List, Tuple
+from datetime import datetime
 
 
 def createDB():
@@ -8,19 +9,21 @@ def createDB():
 
         cursor.execute('''
                 CREATE TABLE IF NOT EXISTS data (
-                    date TEXT PRIMARY KEY,
-                    displacement FLOAT NOT NULL)
+                    date DATETIME PRIMARY KEY,
+                    timezone_date DATETIME,
+                    displacement FLOAT NOT NULL);
                 ''')
+        # cursor.execute("CREATE INDEX index ON data(date);")
         
         connection.commit()
 
 
-def fillDB(records: List[Tuple[str, float]]):
+def fillDB(records: List[Tuple[datetime, datetime, float]]):
     with sqlite3.connect('/app/data/dataDB/data.db') as connection:
         cursor = connection.cursor()
         connection.autocommit = False
 
-        cursor.executemany('INSERT OR IGNORE INTO data (date, displacement) VALUES (?, ?)', records) # OR REPLACE
+        cursor.executemany('INSERT OR IGNORE INTO data (date, timezone_date, displacement) VALUES (?, ?, ?)', records) # OR REPLACE
 
         connection.commit()
 
@@ -38,4 +41,4 @@ def queryFromDB(dtime_start: str, dtime_end: str):
         result = cursor.fetchall()
         result = tuple(map(list, zip(*result)))
         
-    return {"dates": result[0], "displacements": result[1]}
+    return {"dates": result[0] ,"timestamps": result[1], "displacements": result[2]}

@@ -16,7 +16,7 @@ import os
 from pathlib import Path
 #import csv
 #import re
-#import shutil
+import shutil
 #import time
 import datetime
 from datetime import datetime
@@ -35,6 +35,7 @@ from typing import Annotated
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 #import requests
+import pendulum
 import json
 from model import Data
 from compress_json import compress, decompress
@@ -46,9 +47,11 @@ from sql_util import *
 
 # In[2]:
 
-
 DATA_PATH = "/app/data/todo"
 DES_DATA_PATH = "/app/data/done"
+DB_PATH = "/app/data/dataDB"
+
+TZ = os.environ.get("TZ")
 
 #files = sorted(os.listdir(DATA_PATH))
 #print(files)
@@ -66,9 +69,14 @@ files_paths = sorted(Path(DATA_PATH).iterdir(), key=os.path.getmtime)
 app = FastAPI()
 
 
+
 @app.get("/write_toDB")
 async def write_data_toDB():
-    createDB()
+
+    [shutil.move(p, DATA_PATH) for p in Path(DES_DATA_PATH).iterdir()]
+
+    if len(list(Path(DB_PATH).iterdir())) == 0:
+        createDB()
 
     data = Data()
 
@@ -79,18 +87,23 @@ async def write_data_toDB():
             #print(reader)
             lines = file.readlines()
             for line in lines:
-                if line.startswith("#"):
+                if line.startswith("#"):    
                     continue
 
                 line = line.strip()
                 x, y = line.split()
                 x_unix = (float(x)-40587)*86400
-                date = datetime.fromtimestamp(x_unix).strftime('%Y-%m-%d %H:%M:%S')
+                date =  datetime.fromtimestamp(x_unix).strftime('%Y-%m-%d %H:%M:%S')
                 data.dates.append('T'.join(date.split()) + 'Z')
+                timestamp = pendulum.from_format(date, "YYYY-MM-DD HH:mm:ss")
+                data.timestamps.append(timestamp.in_tz(TZ))
                 data.displacements.append(float(y))
-            
-        fillDB(zip(data.dates, data.displacements))
-                
+
+        shutil.move(path.absolute(), DES_DATA_PATH)
+
+        fillDB(zip(data.dates, data.timestamps,data.displacements))
+
+
     return {"status": "DB createad!"}
 
 
@@ -100,6 +113,8 @@ async def read_data(dtime_start: str, dtime_end: str):
 
     start_date = dtime_start.split('T')[0].replace('-', '')
     end_date = dtime_end.split('T')[0].replace('-', '')
+
+    unix_all = list()
 
     data = Data()
 
@@ -128,7 +143,24 @@ async def read_data(dtime_start: str, dtime_end: str):
 
                 data.dates.append('T'.join(date.split()) + 'Z')
                 data.displacements.append(float(y))
+                
+                unix_all.append(x_unix)
 
+    
+    with open("/app/data/dates.txt", "w") as f:
+        f.write(str(compress({"dates": data.dates, "disp": data.displacements})))
+    with open("/app/data/unix.txt", "w") as f:
+        f.write(str(compress({"dates": unix_all, "disp": data.displacements})))
+
+    return compress(
+        {"dates": data.dates,
+         "disp": data.displacements}
+    )
+
+    return compress(
+        {"dates": unix_all,
+         "disp": data.displacements}
+    )
     return {"dates": data.dates, "displacements": data.displacements}
 
 
@@ -191,6 +223,8 @@ async def get_graph_data(dtime_start: Annotated[str | None, Query(pattern='^[0-9
 
 
     data = queryFromDB(dtime_start, dtime_end)
+
+    return data.get("timestamps")
 
     x_date_TZ = data.get("dates")  
     y = data.get("displacements")

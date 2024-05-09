@@ -10,4 +10,4 @@ services:
     ports:
       - "80:80"
     environment:
-      - TZ="Europe/Rome"
+      - TZ=Europe/Rome

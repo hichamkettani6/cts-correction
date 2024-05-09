@@ -14,6 +14,7 @@ RUN pip install --no-cache --upgrade matplotlib
 RUN pip install --no-cache --upgrade IPython
 RUN pip install --no-cache --upgrade jinja2
 RUN pip install --no-cache --upgrade compress-json-python
+RUN pip install --no-cache --upgrade pendulum
 
 ARG TZ
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
