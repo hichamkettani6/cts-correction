@@ -43,8 +43,6 @@ from sql_util import *
 
 
 
-
-
 # In[2]:
 
 DATA_PATH = "/app/data/todo"
@@ -57,7 +55,6 @@ TZ = os.environ.get("TZ")
 #print(files)
 
 
-files_paths = sorted(Path(DATA_PATH).iterdir(), key=os.path.getmtime)
 #files_basenames = []
 #for file_path in files_paths:
 #  files_basenames.append(os.path.basename(file_path))
@@ -68,17 +65,21 @@ files_paths = sorted(Path(DATA_PATH).iterdir(), key=os.path.getmtime)
 
 app = FastAPI()
 
-
+async def get_paths():
+    return sorted(Path(DATA_PATH).iterdir(), key=os.path.getmtime)
 
 @app.get("/write_toDB")
 async def write_data_toDB():
 
     [shutil.move(p, DATA_PATH) for p in Path(DES_DATA_PATH).iterdir()]
+    if len(list(Path(DB_PATH).iterdir())) != 0:
+        os.remove(f'{DB_PATH}/data.db')
 
     if len(list(Path(DB_PATH).iterdir())) == 0:
         createDB()
 
     data = Data()
+    files_paths = await get_paths()
 
     for path in files_paths:
         
@@ -94,14 +95,15 @@ async def write_data_toDB():
                 x, y = line.split()
                 x_unix = (float(x)-40587)*86400
                 date =  datetime.fromtimestamp(x_unix).strftime('%Y-%m-%d %H:%M:%S')
-                data.dates.append('T'.join(date.split()) + 'Z')
-                timestamp = pendulum.from_format(date, "YYYY-MM-DD HH:mm:ss")
-                data.timestamps.append(timestamp.in_tz(TZ))
+
+                #data.timezoneDates.append(data.to_datetime(date, TZ))
+                data.dates.append(date)
+                data.add_timezoneDate(date, TZ)
                 data.displacements.append(float(y))
 
         shutil.move(path.absolute(), DES_DATA_PATH)
 
-        fillDB(zip(data.dates, data.timestamps,data.displacements))
+    fillDB(zip(data.dates, data.timezoneDates,data.displacements))
 
 
     return {"status": "DB createad!"}
@@ -111,8 +113,8 @@ async def write_data_toDB():
 @app.get("/read")
 async def read_data(dtime_start: str, dtime_end: str):
 
-    start_date = dtime_start.split('T')[0].replace('-', '')
-    end_date = dtime_end.split('T')[0].replace('-', '')
+    start_date = dtime_start.split()[0].replace('-', '')
+    end_date = dtime_end.split()[0].replace('-', '')
 
     unix_all = list()
 
@@ -134,14 +136,14 @@ async def read_data(dtime_start: str, dtime_end: str):
                 date = datetime.fromtimestamp(x_unix).strftime('%Y-%m-%d %H:%M:%S')
                 
                 if str(int(path.name.split('_')[2])-1) == start_date and \
-                        date.split()[1] < dtime_start.strip('Z').split('T')[1]:
+                        date.split()[1] < dtime_start.split()[1]:
                     continue
                 
                 if str(int(path.name.split('_')[2])-1) == end_date and \
-                        date.split()[1] > dtime_end.strip('Z').split('T')[1]:
+                        date.split()[1] > dtime_end.split()[1]:
                     break
 
-                data.dates.append('T'.join(date.split()) + 'Z')
+                data.dates.append(date)
                 data.displacements.append(float(y))
                 
                 unix_all.append(x_unix)
@@ -218,21 +220,21 @@ async def get_plot():
 
 
 @app.get("/graph-data")
-async def get_graph_data(dtime_start: Annotated[str | None, Query(pattern='^[0-9]{4}-((0[0-9])|(1[0-2]))-(([0-2][0-9])|3[0-1])T[0-5][0-9]:[0-5][0-9]:[0-5][0-9]Z$')],
-                         dtime_end: Annotated[str | None, Query(pattern='^[0-9]{4}-((0[0-9])|(1[0-2]))-(([0-2][0-9])|3[0-1])T[0-5][0-9]:[0-5][0-9]:[0-5][0-9]Z$')]):
+async def get_graph_data(dtime_start: Annotated[str | None, Query(pattern='^[0-9]{4}-((0[0-9])|(1[0-2]))-(([0-2][0-9])|3[0-1]) [0-5][0-9]:[0-5][0-9]:[0-5][0-9]$')],
+                         dtime_end: Annotated[str | None, Query(pattern='^[0-9]{4}-((0[0-9])|(1[0-2]))-(([0-2][0-9])|3[0-1]) [0-5][0-9]:[0-5][0-9]:[0-5][0-9]$')]):
 
 
-    data = queryFromDB(dtime_start, dtime_end)
-
-    return data.get("timestamps")
-
-    x_date_TZ = data.get("dates")  
-    y = data.get("displacements")
+    data = await queryFromDB(dtime_start, dtime_end)
+    
+    dates = data.get("dates")
+    timezoneDates = data.get("timezoneDates")  
+    displacements = data.get("displacements")
+    
 
     df = {  
         'data':[{
-           'x': x_date_TZ,
-           'y': y
+           'x': timezoneDates,
+           'y': displacements
            }],
        'layout':{
            "title": "hrog output with cts corrections",
@@ -253,12 +255,12 @@ templates = Jinja2Templates(directory="templates")
 
 @app.get("/graph-data-html", response_class=HTMLResponse)
 async def get_graph_data_html(request: Request,
-                              dtime_start: Annotated[str | None, Query(pattern='^[0-9]{4}-((0[0-9])|(1[0-2]))-(([0-2][0-9])|3[0-1])T[0-5][0-9]:[0-5][0-9]:[0-5][0-9]Z$')] = None,
-                              dtime_end: Annotated[str | None, Query(pattern='^[0-9]{4}-((0[0-9])|(1[0-2]))-(([0-2][0-9])|3[0-1])T[0-5][0-9]:[0-5][0-9]:[0-5][0-9]Z$')] = None):
+                              dtime_start: Annotated[str | None, Query(pattern='^[0-9]{4}-((0[0-9])|(1[0-2]))-(([0-2][0-9])|3[0-1]) [0-5][0-9]:[0-5][0-9]:[0-5][0-9]$')] = None,
+                              dtime_end: Annotated[str | None, Query(pattern='^[0-9]{4}-((0[0-9])|(1[0-2]))-(([0-2][0-9])|3[0-1]) [0-5][0-9]:[0-5][0-9]:[0-5][0-9]$')] = None):
    
     if dtime_start or dtime_end:
-        dateFrom, timeFrom = dtime_start.strip('Z').split('T')
-        dateTo, timeTo = dtime_end.strip('Z').split('T')
+        dateFrom, timeFrom = dtime_start.split()
+        dateTo, timeTo = dtime_end.split()
         return templates.TemplateResponse(request=request, name="graph_corrections.html",
                                           context={"dateFrom": dateFrom, "timeFrom": timeFrom, 
                                                    "dateTo": dateTo, "timeTo":timeTo})

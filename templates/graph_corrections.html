@@ -202,8 +202,8 @@
             console.log(toDate.format());
 
             $.getJSON('/graph-data', {
-                dtime_start: fromDate.format(),
-                dtime_end: toDate.format()
+                dtime_start: fromDate._i,
+                dtime_end: toDate._i
             }).done(function(json) {
                 console.log('done', json);
 

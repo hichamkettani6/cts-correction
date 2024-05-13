@@ -10,7 +10,7 @@ def createDB():
         cursor.execute('''
                 CREATE TABLE IF NOT EXISTS data (
                     date DATETIME PRIMARY KEY,
-                    timezone_date DATETIME,
+                    timezoneDate DATETIME,
                     displacement FLOAT NOT NULL);
                 ''')
         # cursor.execute("CREATE INDEX index ON data(date);")
@@ -23,12 +23,12 @@ def fillDB(records: List[Tuple[datetime, datetime, float]]):
         cursor = connection.cursor()
         connection.autocommit = False
 
-        cursor.executemany('INSERT OR IGNORE INTO data (date, timezone_date, displacement) VALUES (?, ?, ?)', records) # OR REPLACE
+        cursor.executemany('INSERT OR IGNORE INTO data (date, timezoneDate, displacement) VALUES (?, ?, ?)', records) # OR REPLACE
 
         connection.commit()
 
 
-def queryFromDB(dtime_start: str, dtime_end: str):
+async def queryFromDB(dtime_start: str, dtime_end: str):
     with sqlite3.connect('/app/data/dataDB/data.db') as connection:
         cursor = connection.cursor()
 
@@ -41,4 +41,4 @@ def queryFromDB(dtime_start: str, dtime_end: str):
         result = cursor.fetchall()
         result = tuple(map(list, zip(*result)))
         
-    return {"dates": result[0] ,"timestamps": result[1], "displacements": result[2]}
+    return {"dates": result[0] ,"timezoneDates": result[1], "displacements": result[2]}
