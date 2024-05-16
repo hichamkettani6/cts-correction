@@ -45,24 +45,24 @@ def fillDB2(records: List[DisData]):
         session.commit()
 
 
-async def queryFromDB(dtime_start: str, dtime_end: str):
+async def queryFromDB(dtime_start: AwareDatetime, dtime_end: AwareDatetime):
     with sqlite3.connect('/app/data/dataDB/data.db') as connection:
         cursor = connection.cursor()
 
         query = '''SELECT *
                     FROM disdata d
-                    WHERE d.date_utc BETWEEN ? AND ?''' 
+                    WHERE d.timestamp BETWEEN ? AND ?''' 
 
         cursor.execute(query, (dtime_start, dtime_end))
         
         result = cursor.fetchall()
-        result = tuple(map(list, zip(*result)))
+        result = list(zip(*result))
         
-    return {"MJD_dates": result[0], "dates": result[1] ,"timezoneDates": result[2], "displacements": result[3]}
+    return {"MJD_dates": result[0], "dates": result[1] ,"timezoneDates": result[2], "displacements": result[4]}
 
-async def queryFromDB2(dtime_start: AwareDatetime, dtime_end: AwareDatetime):
+async def queryFromDB2(dtime_start: datetime, dtime_end: datetime):
     with Session(engine) as session:
-        query = select(DisData).where(DisData.date_utc.between(dtime_start, dtime_end))
+        query = select(DisData).where(DisData.timestamp.between(dtime_start, dtime_end))
         result = session.exec(query).all()
 
     return result
