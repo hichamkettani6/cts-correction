@@ -1,31 +1,48 @@
 import sqlite3
 from typing import List, Tuple
 from datetime import datetime
+from sqlmodel import SQLModel, Session, create_engine, select
+from model import DisData
+from pydantic import AwareDatetime
 
+
+engine = create_engine("sqlite:////app/data/dataDB/data.db", echo=True)
 
 def createDB():
+
+    SQLModel.metadata.create_all(engine)
+    return
+
+
     with sqlite3.connect('/app/data/dataDB/data.db') as connection:
         cursor = connection.cursor()
 
         cursor.execute('''
-                CREATE TABLE IF NOT EXISTS data (
-                    date DATETIME PRIMARY KEY,
-                    timezoneDate DATETIME,
-                    displacement FLOAT NOT NULL);
+                CREATE TABLE IF NOT EXISTS disdata (
+                    MJD_date FLOAT PRIMARY KEY,
+                    date_utc DATETIME NOT NULL,
+                    timestamp DATETIME NOT NULL,
+                    displacement FLOAT);
                 ''')
         # cursor.execute("CREATE INDEX index ON data(date);")
         
         connection.commit()
 
 
-def fillDB(records: List[Tuple[datetime, datetime, float]]):
+def fillDB(records: List[Tuple[float, datetime, datetime, float]]):
+    
     with sqlite3.connect('/app/data/dataDB/data.db') as connection:
         cursor = connection.cursor()
         connection.autocommit = False
 
-        cursor.executemany('INSERT OR IGNORE INTO data (date, timezoneDate, displacement) VALUES (?, ?, ?)', records) # OR REPLACE
+        cursor.executemany('INSERT OR IGNORE INTO disdata (MJD_date, date_utc, timestamp, displacement) VALUES (?, ?, ?, ?)', records) # OR REPLACE
 
         connection.commit()
+
+def fillDB2(records: List[DisData]):
+    with Session(engine) as session:
+        session.add_all(records)
+        session.commit()
 
 
 async def queryFromDB(dtime_start: str, dtime_end: str):
@@ -33,12 +50,19 @@ async def queryFromDB(dtime_start: str, dtime_end: str):
         cursor = connection.cursor()
 
         query = '''SELECT *
-                    FROM data d
-                    WHERE d.date BETWEEN ? AND ?''' 
+                    FROM disdata d
+                    WHERE d.date_utc BETWEEN ? AND ?''' 
 
         cursor.execute(query, (dtime_start, dtime_end))
         
         result = cursor.fetchall()
         result = tuple(map(list, zip(*result)))
         
-    return {"dates": result[0] ,"timezoneDates": result[1], "displacements": result[2]}
+    return {"MJD_dates": result[0], "dates": result[1] ,"timezoneDates": result[2], "displacements": result[3]}
+
+async def queryFromDB2(dtime_start: AwareDatetime, dtime_end: AwareDatetime):
+    with Session(engine) as session:
+        query = select(DisData).where(DisData.date_utc.between(dtime_start, dtime_end))
+        result = session.exec(query).all()
+
+    return result

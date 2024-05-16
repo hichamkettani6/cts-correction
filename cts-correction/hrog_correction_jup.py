@@ -14,6 +14,8 @@ Created on Fri Mar  8 13:50:22 2024
 
 import os
 from pathlib import Path
+from aiopath import AsyncPath
+import aiofiles
 #import csv
 #import re
 import shutil
@@ -35,9 +37,8 @@ from typing import Annotated
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 #import requests
-import pendulum
 import json
-from model import Data
+from model import DisData
 from compress_json import compress, decompress
 from sql_util import *
 
@@ -63,14 +64,73 @@ TZ = os.environ.get("TZ")
 
 # In[3]:
 
+class FileService():
+    def __init__(self, pathData: str, des_pathData):
+        self.pathData = pathData
+        self.des_pathData = des_pathData
+
+    async def get_paths(self):
+        paths = [path async for path in AsyncPath(self.pathData).iterdir()]
+        return sorted(paths, key=os.path.getmtime)
+    
+    async def read_data(self):
+        allData: List[DisData] = list()
+
+        for path in await self.get_paths():
+            async with aiofiles.open(path) as file:
+
+                lines = await file.readlines()
+                for line in lines:
+                    if line.startswith('#'):
+                        continue
+
+                    x, y = line.strip().split()
+                    x = float(x)
+                    x_unix = (x-40587)*86400
+                    date =  datetime.fromtimestamp(x_unix).strftime('%Y-%m-%d %H:%M:%S')
+
+                    data = DisData(MJD_dates = x, displacement = float(y))
+                    data.add_timezone_dates(date, TZ)
+                    allData.append(data)
+
+            shutil.move(path, self.des_pathData)
+                
+        return allData
+    
+    async def writeToDB(self):
+
+        if len(list(Path(DB_PATH).iterdir())) != 0:
+            [shutil.move(p, self.pathData) for p in Path(self.des_pathData).iterdir()]
+            os.remove(f'{DB_PATH}/data.db')
+
+        if len(list(Path(DB_PATH).iterdir())) == 0:
+            createDB()
+
+        allData = await self.read_data()
+        #return list(map(lambda d: (d.date_utc, d.timestamp), allData))
+        fillDB2(allData)
+
+        return {"status": 200}
+        #ToInsertData = list(map(lambda data: tuple(data.__dict__.values()), allData))
+        #fillDB(ToInsertData)
+    
+
+
+fileService = FileService(DATA_PATH, DES_DATA_PATH)
+                
+
+
+
 app = FastAPI()
 
-async def get_paths():
-    return sorted(Path(DATA_PATH).iterdir(), key=os.path.getmtime)
+
 
 @app.get("/write_toDB")
 async def write_data_toDB():
 
+    return await fileService.writeToDB()
+
+    '''#debug..
     [shutil.move(p, DATA_PATH) for p in Path(DES_DATA_PATH).iterdir()]
     if len(list(Path(DB_PATH).iterdir())) != 0:
         os.remove(f'{DB_PATH}/data.db')
@@ -106,7 +166,7 @@ async def write_data_toDB():
     fillDB(zip(data.dates, data.timezoneDates,data.displacements))
 
 
-    return {"status": "DB createad!"}
+    return {"status": "DB createad!"}'''
 
 
 #using compress-json..
@@ -224,11 +284,11 @@ async def get_graph_data(dtime_start: Annotated[str | None, Query(pattern='^[0-9
                          dtime_end: Annotated[str | None, Query(pattern='^[0-9]{4}-((0[0-9])|(1[0-2]))-(([0-2][0-9])|3[0-1]) [0-5][0-9]:[0-5][0-9]:[0-5][0-9]$')]):
 
 
-    data = await queryFromDB(dtime_start, dtime_end)
-    
-    dates = data.get("dates")
+    data = await queryFromDB2(datetime.strptime(dtime_start, "%Y-%m-%d %H:%M:%S"), datetime.strptime(dtime_end, "%Y-%m-%d %H:%M:%S"))
+    return data
+    '''dates = data.get("dates")
     timezoneDates = data.get("timezoneDates")  
-    displacements = data.get("displacements")
+    displacements = data.get("displacements")'''
     
 
     df = {  
