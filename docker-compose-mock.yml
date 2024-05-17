@@ -1,11 +1,36 @@
 services:
 
-  inrim_cts_correction:
-
+  cts_correction:
+    stdin_open: true
+    tty: true
+    build:
+      context: .
+      dockerfile: Dockerfile
     image: cts_correction:latest 
     volumes:
       - ./cts-correction:/app
       - ./templates:/templates
       - ./static:/static
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin
+      - POSTGRES_DB=mydatabase
     ports:
       - "80:80"
+    depends_on:
+      - database
+      
+
+  database:
+    build:
+      context: .
+      dockerfile: Dockerfile-postgre
+    image: postgre:latest
+    #container_name: my-postgres-container
+    environment:
+      - TZ=Europe/Rome
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin
+      - POSTGRES_DB=mydatabase      
+    ports:
+      - "5432:5432"

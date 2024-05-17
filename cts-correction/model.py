@@ -12,17 +12,8 @@ class Dates(BaseModel):
 
 
 class DisData(SQLModel, table=True):
-    MJD_dates: float = Field(primary_key=True)
-    date_utc: AwareDatetime = Field(sa_column=Column(TIMESTAMP(timezone=True)))
+    id: int = Field(primary_key=True)
+    MJD_date: float
+    date_utc: AwareDatetime = Field(sa_column=Column(TEXT))
     timestamp: AwareDatetime = Field(sa_column=Column(TIMESTAMP(timezone=True))) #Field(sa_column=TIMESTAMP(timezone=True))
-    tz: str
     displacement: float
-
-    @property
-    def _timestamp(self):
-        return self.timestamp.replace(tzinfo=ZoneInfo(self.tz))
-    
-    @_timestamp.setter
-    def _timestamp(self, date: AwareDatetime):
-        self.timestamp = date.astimezone(ZoneInfo(self.tz))
-

@@ -51,7 +51,7 @@ DATA_PATH = "/app/data/todo"
 DES_DATA_PATH = "/app/data/done"
 DB_PATH = "/app/data/dataDB"
 
-TZ = os.environ.get("TZ")
+#TZ = os.environ.get("TZ")
 
 #files = sorted(os.listdir(DATA_PATH))
 #print(files)
@@ -90,8 +90,7 @@ class FileService():
                     x_unix = (x-40587)*86400
                     date =  datetime.fromtimestamp(x_unix, tz=ZoneInfo('UTC')).replace(microsecond=False)
 
-                    data = DisData(MJD_dates=x, date_utc=date, displacement=float(y), tz=TZ)
-                    data._timestamp = date
+                    data = DisData(MJD_date=x, date_utc=date.strftime("%Y-%m-%d %H:%M:%S%z"), timestamp=date, displacement=float(y))
                     allData.append(data)
 
             shutil.move(path, self.des_pathData)
@@ -100,12 +99,12 @@ class FileService():
     
     async def writeToDB(self):
 
-        if len(list(Path(DB_PATH).iterdir())) != 0:
-            [shutil.move(p, self.pathData) for p in Path(self.des_pathData).iterdir()]
-            os.remove(f'{DB_PATH}/data.db')
+        #if len(list(Path(DB_PATH).iterdir())) != 0:
+        [shutil.move(p, self.pathData) for p in Path(self.des_pathData).iterdir()]
+        #   os.remove(f'{DB_PATH}/data.db')
 
-        if len(list(Path(DB_PATH).iterdir())) == 0:
-            createDB()
+        #if len(list(Path(DB_PATH).iterdir())) == 0:
+        createDB()
 
         allData = await self.read_data()
         #return list(map(lambda d: (d.date_utc, d.timestamp), allData))
@@ -285,16 +284,20 @@ async def get_graph_data(dtime_start: Annotated[str | None, Query(pattern='^[0-9
                          dtime_end: Annotated[str | None, Query(pattern='^[0-9]{4}-((0[0-9])|(1[0-2]))-(([0-2][0-9])|3[0-1]) [0-5][0-9]:[0-5][0-9]:[0-5][0-9]$')]):
 
 
-    data = await queryFromDB(datetime.strptime(dtime_start, "%Y-%m-%d %H:%M:%S"), datetime.strptime(dtime_end, "%Y-%m-%d %H:%M:%S"))
-    #timestamps, displacements = zip(*list(map(lambda d: (d._timestamp, d.displacement), data)))
-    dates = data.get("dates")
+    data = await queryFromDB(datetime.strptime(dtime_start, "%Y-%m-%d %H:%M:%S"),
+                               datetime.strptime(dtime_end, "%Y-%m-%d %H:%M:%S"))
+    
+    
+    timestamps, displacements = zip(*list(map(lambda d: (d.timestamp, d.displacement), data)))
+
+    '''dates = data.get("dates")
     timezoneDates = data.get("timezoneDates")  
-    displacements = data.get("displacements")
+    displacements = data.get("displacements")'''
     
 
     df = {  
         'data':[{
-           'x': timezoneDates,
+           'x': timestamps,
            'y': displacements
            }],
        'layout':{
