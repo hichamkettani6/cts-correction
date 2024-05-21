@@ -35,7 +35,7 @@ import plotly.express as px
 import pandas as pd
 from fastapi import FastAPI, Query, HTTPException, Request
 from fastapi.responses import HTMLResponse
-from typing import Annotated
+from typing import Annotated, List
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 #import requests
@@ -100,19 +100,20 @@ class FileService():
     
     async def write_file(self, file_path: AsyncPath):
         data = await self.read_file(file_path)
-        await createDB()    #if the db exists..it will be ignored..
         await fillDB(data)
 
     async def process_existing_files(self):
+        await createDB()    #if the db exists..it will be ignored..
         paths = await self.get_paths()
         for path in paths:
-            asyncio.create_task(self.write_file(path))
+            await self.write_file(path)
 
     
     async def read_data(self):
         allData: List[DisData] = list()
+        paths = await self.get_paths()
 
-        for path in await self.get_paths():
+        for path in paths:
             async with aiofiles.open(path) as file:
             
                 lines = await file.readlines()
@@ -135,15 +136,13 @@ class FileService():
     
     async def writeToDB(self):
 
-        [shutil.move(p, self.pathData) for p in Path(self.des_pathData).iterdir()]
+        [await move(p, self.pathData) for p in Path(self.des_pathData).iterdir()]
 
-        createDB()
+        await createDB()
 
         allData = await self.read_data()
-        #return list(map(lambda d: (d.date_utc, d.timestamp), allData))
-        fillDB(allData)
-        #ToInsertData = list(map(lambda data: tuple(data.__dict__.values()), allData))
-        #fillDB(ToInsertData)
+        await fillDB(allData)
+
     
 
 
@@ -162,7 +161,8 @@ async def dataToDB_handler(request: Request, call_next):
 @app.get("/write_toDB")
 async def write_data_toDB(request: Request):
     fileService = request.scope.get("fileService")
-    await fileService.process_existing_files()
+    asyncio.gather(fileService.writeToDB())
+    #await fileService.writeToDB()
 
     return {"status": 200}
 
@@ -198,12 +198,13 @@ async def get_plot():
 
 
 @app.get("/graph-data")
-async def get_graph_data(dtime_start: Annotated[str | None, Query(pattern='^[0-9]{4}-((0[0-9])|(1[0-2]))-(([0-2][0-9])|3[0-1]) [0-5][0-9]:[0-5][0-9]:[0-5][0-9]$')],
-                         dtime_end: Annotated[str | None, Query(pattern='^[0-9]{4}-((0[0-9])|(1[0-2]))-(([0-2][0-9])|3[0-1]) [0-5][0-9]:[0-5][0-9]:[0-5][0-9]$')]):
+async def get_graph_data(dtime_start: Annotated[str, Query(regex=query_pattern().pattern)],
+                         dtime_end: Annotated[str, Query(regex=query_pattern().pattern)]):
 
 
     data = await queryFromDB(datetime.strptime(dtime_start, "%Y-%m-%d %H:%M:%S"),
                                datetime.strptime(dtime_end, "%Y-%m-%d %H:%M:%S"))
+    
     
     try:
         timestamps, displacements = zip(*list(map(lambda d: (d.timestamp, d.displacement), data)))
@@ -236,10 +237,10 @@ templates = Jinja2Templates(directory="templates")
 
 @app.get("/graph-data-html", response_class=HTMLResponse)
 async def get_graph_data_html(request: Request,
-                              dtime_start: Annotated[str | None, Query(pattern='^[0-9]{4}-((0[0-9])|(1[0-2]))-(([0-2][0-9])|3[0-1]) [0-5][0-9]:[0-5][0-9]:[0-5][0-9]$')] = None,
-                              dtime_end: Annotated[str | None, Query(pattern='^[0-9]{4}-((0[0-9])|(1[0-2]))-(([0-2][0-9])|3[0-1]) [0-5][0-9]:[0-5][0-9]:[0-5][0-9]$')] = None):
+                              dtime_start: Annotated[str | None, Query(regex=query_pattern().pattern)] = None,
+                              dtime_end: Annotated[str | None, Query(regex=query_pattern().pattern)] = None):
    
-    if dtime_start or dtime_end:
+    if dtime_start and dtime_end:
         dateFrom, timeFrom = dtime_start.split()
         dateTo, timeTo = dtime_end.split()
         return templates.TemplateResponse(request=request, name="graph_corrections.html",

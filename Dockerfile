@@ -15,7 +15,8 @@ RUN pip install --no-cache --upgrade IPython
 RUN pip install --no-cache --upgrade jinja2
 RUN pip install --no-cache --upgrade compress-json-python
 RUN pip install --no-cache --upgrade sqlmodel
-RUN pip install --no-cache --upgrade psycopg2
+RUN pip install --no-cache --upgrade asyncpg
+
 
 #ARG TZ
 #RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
