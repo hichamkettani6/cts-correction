@@ -66,8 +66,17 @@
     <div class="form-group">
         <div class="col-sm-offset-2 col-sm-10">
             <div class="btn-group">
-                <button class="btn btn-primary" id="generate-button">Generate</button>
+                <button class="btn btn-primary" id="generate-button" >Generate</button>
+                <button class="btn btn-primary" id="cancel-button" >Cancel</button>
             </div>
+            <p>
+                <div class="progress">
+                    <div id="progress-bar" class="progress-bar" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" style="width: 0%;">
+                        0%
+                    </div>
+                </div>
+            </p>
+            <p id="message"></p>
         </div>
     </div>
 </form>
@@ -82,6 +91,7 @@
 <script src="{{ url_for('static', path='/js/jquery-ui.min.js') }}"></script>
 <script src="{{ url_for('static', path='/js/moment.min.js') }}"></script>
 <script src="{{ url_for('static', path='/js/moment-timezone.min.js') }}"></script>
+<script src="{{ url_for('static', path='/js/FileSaver.min.js') }}"></script>
 
 
 <script>
@@ -89,6 +99,7 @@
 
     let exp = null;
     let timezone = null;
+    const generator_interval_min = {{ generator_interval_min }};
 
     $('#select-exp').on('change', function() {
         console.log('select-exp change')
@@ -176,12 +187,27 @@
             $("#generate-button").trigger('click'); 
     })
 
+
+    $('#time-info').on('click', '#event-missing-periods-link', function() {
+        console.log('xxxx');
+        $('#event-missing-periods').toggleClass('hide');
+        return false;
+    });
+
+
+    let graph_json = null;
+    let queue = [];
+    let queue_index = null;
+    let canceled = false;
+
+
     $('#generate-button').on('click', function() {
         try {
+            $('#message').empty();
             $('#generate-button').prop('disabled', true);
+            $('#cancel-button').prop('disabled', false);
 
             console.log('generate');
-
             console.log(`exp: ${exp}`);
             console.log(`from date: ${$("#datepickFrom").datepicker().val()}`);
             console.log(`from time: ${$("#timepickFrom").val()}`);
@@ -190,42 +216,208 @@
 
             console.log(timezone);
 
-
-            let fromDate = moment.tz(`${$("#datepickFrom").datepicker().val()} ${$("#timepickFrom").val()}`, 'YYYY-M-D H:m:s', timezone)
-            console.log(fromDate.isValid());
-            //console.log(datetimeSecFormat(fromDate, timezone));
-            console.log(fromDate.format());
+            let fromDate = moment.tz(`${$("#datepickFrom").datepicker().val()} ${$("#timepickFrom").val()}`, 'YYYY-M-D H:m:s', timezone);
+            console.log(`fromDate is ${fromDate.isValid() ? 'valid' : 'invalid'}`);
+            console.log(`fromDate: ${fromDate.format()}`);
 
             let toDate = moment.tz(`${$("#datepickTo").datepicker().val()} ${$("#timepickTo").val()}`, 'YYYY-M-D H:m:s', timezone)
-            console.log(toDate.isValid());
-            //console.log(datetimeSecFormat(toDate, timezone));
-            console.log(toDate.format());
+            console.log(`toDate is ${toDate.isValid() ? 'valid' : 'invalid'}`);
+            console.log(`toDate: ${toDate.format()}`);
 
-            $.getJSON('/graph-data', {
-                dtime_start: fromDate._i,
-                dtime_end: toDate._i
-            }).done(function(json) {
-                console.log('done', json);
-
-                $('#graph').empty();
-                json.list.forEach(function(graph_data, index) {
-                    console.log(index, graph_data);
-                    let elemId = `graph${index}`;
-                    $('#graph').append($(`<div id="${elemId}"></div>`));
-                    Plotly.newPlot(elemId, graph_data.data, graph_data.layout);
-                });
-            }).fail(function() {
-                console.log('fail');
-            }).always(function() {
+            if (!fromDate.isValid() || !toDate.isValid()) {
+                if (!fromDate.isValid())
+                    set_message('#message', 'danger', 'From Date is invalid.');
+                else if (!toDate.isValid())
+                    set_message('#message', 'danger', 'To Date is invalid.');
                 $('#generate-button').prop('disabled', false);
-            });
+                $('#cancel-button').prop('disabled', true);
+                return false;
+            }
 
+            if (toDate <= fromDate) {
+                set_message('#message', 'danger', '"To Date Time" must be a value after "From Date Time".');
+                $('#generate-button').prop('disabled', false);
+                $('#cancel-button').prop('disabled', true);
+                return false;
+            }
+
+            initGraphs();  // グラフの初期化
+
+            let cur = fromDate.clone();
+            while (cur < toDate) {
+                let prev = cur.clone();
+                cur.add(generator_interval_min, 'minutes');
+                if (cur > toDate)
+                    cur = toDate.clone();
+                console.assert(prev < cur);
+                console.assert(cur <= toDate);
+                queue.push([prev.format(), cur.format()]);
+                queue_index = 0;
+            }
+            console.log('queue:', queue);
+
+            nextQuery();  // 最初のクエリを発行する
         } catch (error) {
             console.error(error);
             $('#generate-button').prop('disabled', false);
+            $('#cancel-button').prop('disabled', true);
         }
 
         return false;
+    });
+
+
+    $('#cancel-button').on('click', function() {
+        canceled = true;
+        setProgressBar(false);
+        $('#generate-button').prop('disabled', false);
+        $('#cancel-button').prop('disabled', true);
+        console.log('cancel');
+        return false;
+    });
+
+
+    function setProgressBar(active) {
+        let elem = $('#progress-bar');
+
+        elem.toggleClass('progress-bar-striped active', active);
+    }
+
+
+    function updateProgressBar(val) {
+        setProgressBar(true);
+
+        let elem = $('#progress-bar');
+        val = `${Math.floor(val)}%`
+        elem.text(val);
+        elem.css('width', val);
+    }
+
+
+    function initGraphs() {
+        $('#graph').empty();
+        graph_json = null;
+        queue = [];
+        queue_index = null;
+        canceled = false;
+        updateProgressBar(0);
+    }
+
+
+    function nextQuery() {
+        if (queue.length == 0 || queue_index >= queue.length) {
+            setProgressBar(false);
+            $('#generate-button').prop('disabled', false);
+            $('#cancel-button').prop('disabled', true);
+            console.log('complete');
+            return;
+        }
+
+        let range = queue[queue_index++];
+        console.log('query range:', range);
+
+        $.getJSON('/graph-data', {
+            dtime_start: range[0].replace('Z', '').replace('T', ' '),
+            dtime_end: range[1].replace('Z', '').replace('T', ' '),
+        }).done(function(json) {
+            if (canceled)
+                return;
+
+            console.log('done', json);
+
+            if ($('#graph').children().length == 0) {
+                // 初回の場合（#graph の子供がいない）
+                graph_json = json;
+                json.list.forEach(function(graph_data, index) {
+                    // グラフごとの処理
+                    $('#graph').append($(`
+                        <div class="pull-right">
+                            <button class="btn btn-default btn-xs download-csv" data-graph-id="${graph_data.graph_id}" data-is-all="false">Download CSV</button>
+                            <button class="btn btn-default btn-xs download-csv" data-graph-id="${graph_data.graph_id}" data-is-all="true" >Download CSV (All GPS Time)</button>
+                        </div>
+                        <div class="clearfix"></div>
+                        <div id="graph-${graph_data.graph_id}">
+                        </div>
+                    `));
+                    Plotly.newPlot('graph-' + graph_data.graph_id, graph_data.data, graph_data.layout);
+                });
+            } else {
+                // 2回目以降の場合
+                for (let idx=0; idx<json.list.length; idx++) {
+                    const diff = json.list[idx];
+
+                    for (let idx2=0; idx2<graph_json.list.length; idx2++) {
+                        const src = graph_json.list[idx2];
+                        if (src.graph_id != diff.graph_id)
+                            continue;
+
+                        let src_cts = src.data[0];
+
+                        // 差分を加算すると規定期間を超えてしまう場合、元データから不要なデータを削除する
+                        if (src.total_sec + diff.total_sec > src.graph_span_sec) {
+                            const rm_span = (src.total_sec + diff.total_sec - src.graph_span_sec);
+
+                            if (rm_span >= src.total_sec) {
+                                src_cts.x = [];
+                                src_cts.y = [];
+                                src.total_sec = 0;
+                            } else {
+                            
+                                for (let data_idx=0; data_idx<src_cts.x.length; data_idx++) {
+                                    if (src_cts.x[data_idx] >= rm_span) {
+                                        src_cts.x = src_cts.x.slice(data_idx)
+                                        src_cts.y = src_cts.y.slice(data_idx);
+                                        break;
+                                    }
+                                }
+                                for (let data_idx=0; data_idx<src_cts.x.length; data_idx++) {
+                                    src_cts.x[data_idx] -= rm_span;
+                                }
+
+                                src.total_sec -= rm_span;
+                            }
+                        }
+
+                        // データの統合
+                        let start_sec = src.total_sec;
+
+                        let diff_cts = diff.data[0];
+
+                        for (let data_idx=0; data_idx<diff_cts.x.length; data_idx++) {
+                            diff_cts.x[data_idx] += start_sec;
+                        }
+
+                        
+                        src.data[0].x = src_cts.x.concat(diff_cts.x)
+                        src.data[0].y = src_cts.y.concat(diff_cts.y)
+                        src.total_sec = start_sec + diff.total_sec;
+                        src.end = diff.end;
+
+                        Plotly.restyle('graph-' + src.graph_id, {x:[src.data[0].x], y:[src.data[0].y]});
+                    }
+                }
+            }
+
+            // プログレスバーの更新および次のクエリー処理
+            updateProgressBar(queue_index / queue.length * 100);
+            nextQuery();
+
+        }).fail(function(jqXHR, statusText, errorThrown) {
+            console.log('jqXHR:', jqXHR);
+            console.log('statusText:', statusText);
+            console.log('errorThrown:', errorThrown);
+            set_message('#message', 'danger', `${jqXHR.statusText} (${jqXHR.status})`);
+
+            $('#generate-button').prop('disabled', false);
+            $('#cancel-button').prop('disabled', true);
+            setProgressBar(false);
+        });
+    }
+
+
+    $('div#graph').on('click', 'button.download-csv', function($elem) {
+        $elem = $($elem.target);
+        downloadCsv(graph_json, $elem.data('graph-id'), $elem.data('is-all'));
     });
 
 </script>

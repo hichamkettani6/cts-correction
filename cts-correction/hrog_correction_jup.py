@@ -109,6 +109,7 @@ class FileService():
         await createDB()
         paths = await self.get_paths()
         await asyncio.gather(*[self.write_file(path) for path in paths])
+        #[await self.write_file(path) for path in paths]
 
     
     async def read_data(self):
@@ -216,6 +217,7 @@ async def get_graph_data(dtime_start: Annotated[str, Query(regex=query_pattern()
  
 
     df = {  
+        'graph_id': "cts",
         'data':[{
            'x': timestamps,
            'y': displacements
@@ -226,7 +228,7 @@ async def get_graph_data(dtime_start: Annotated[str, Query(regex=query_pattern()
                "title": 'date [s]',
             },
             "yaxis": {
-                "title": 'utc(it) - hrog output [s]',
+                "title": 'Time displacements [s]',
             }
         }
     }
@@ -247,7 +249,8 @@ async def get_graph_data_html(request: Request,
         dateTo, timeTo = dtime_end.split()
         return templates.TemplateResponse(request=request, name="graph_corrections.html",
                                           context={"dateFrom": dateFrom, "timeFrom": timeFrom, 
-                                                   "dateTo": dateTo, "timeTo":timeTo})
+                                                   "dateTo": dateTo, "timeTo":timeTo,
+                                                    "generator_interval_min": 1})
     
     return templates.TemplateResponse(request=request, name="graph_corrections.html")
 

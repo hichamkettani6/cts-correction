@@ -55,5 +55,5 @@ async def queryFromDB(dtime_start: datetime, dtime_end: datetime) -> List[DisDat
 
 
 def query_pattern():
-    pattern = r'^[0-9]{4}-((0[1-9])|(1[0-2]))-(([0-2][1-9])|3[0-1]) [0-5][0-9]:[0-5][0-9]:[0-5][0-9]$'
+    pattern = r'^[0-9]{4}-((0[1-9])|(1[0-2]))-((0[1-9])|([1-2][0-9])|(3[0-1])) [0-5][0-9]:[0-5][0-9]:[0-5][0-9]$'
     return re.compile(pattern).pattern
