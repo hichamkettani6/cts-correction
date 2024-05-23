@@ -77,10 +77,11 @@ class FileService():
 
     async def get_paths(self) -> List[AsyncPath]:
         paths = [path async for path in AsyncPath(self.pathData).iterdir()]
-        return sorted(paths, key=os.path.getmtime)
+        #return sorted(paths, key=os.path.getmtime)
+        return paths
     
-    async def read_file(self, file_path: AsyncPath) -> List[DisData]:
-        data: List[DisData] = list()
+    async def read_file(self, file_path: AsyncPath):
+        data: str = ''
 
         async with aiofiles.open(file_path) as file:
             lines = await file.readlines()
@@ -93,20 +94,21 @@ class FileService():
                 x_unix = (x-40587)*86400
                 date =  datetime.fromtimestamp(x_unix, tz=ZoneInfo('UTC')).replace(microsecond=False)
 
-                data.append(DisData(MJD_date=x, date_utc=date.strftime("%Y-%m-%d %H:%M:%S%z"),
-                                timestamp=date, displacement=float(y)))
-                
-            return data
+                #data.append(DisData(MJD_date=x, date_utc=date.strftime("%Y-%m-%d %H:%M:%S%z"),
+                #                timestamp=date, displacement=float(y)))
+
+                data += f"({x}, '{date.strftime("%Y-%m-%d %H:%M:%S%z")}', '{date}', {float(y)}), "
+
+            return data.rstrip(', ')
     
     async def write_file(self, file_path: AsyncPath):
         data = await self.read_file(file_path)
         await fillDB(data)
 
     async def process_existing_files(self):
-        await createDB()    #if the db exists..it will be ignored..
+        await createDB()
         paths = await self.get_paths()
-        for path in paths:
-            await self.write_file(path)
+        await asyncio.gather(*[self.write_file(path) for path in paths])
 
     
     async def read_data(self):
@@ -161,7 +163,7 @@ async def dataToDB_handler(request: Request, call_next):
 @app.get("/write_toDB")
 async def write_data_toDB(request: Request):
     fileService = request.scope.get("fileService")
-    asyncio.gather(fileService.writeToDB())
+    await asyncio.gather(fileService.process_existing_files())
     #await fileService.writeToDB()
 
     return {"status": 200}
@@ -198,8 +200,8 @@ async def get_plot():
 
 
 @app.get("/graph-data")
-async def get_graph_data(dtime_start: Annotated[str, Query(regex=query_pattern().pattern)],
-                         dtime_end: Annotated[str, Query(regex=query_pattern().pattern)]):
+async def get_graph_data(dtime_start: Annotated[str, Query(regex=query_pattern())],
+                         dtime_end: Annotated[str, Query(regex=query_pattern())]):
 
 
     data = await queryFromDB(datetime.strptime(dtime_start, "%Y-%m-%d %H:%M:%S"),
@@ -237,8 +239,8 @@ templates = Jinja2Templates(directory="templates")
 
 @app.get("/graph-data-html", response_class=HTMLResponse)
 async def get_graph_data_html(request: Request,
-                              dtime_start: Annotated[str | None, Query(regex=query_pattern().pattern)] = None,
-                              dtime_end: Annotated[str | None, Query(regex=query_pattern().pattern)] = None):
+                              dtime_start: Annotated[str | None, Query(regex=query_pattern())] = None,
+                              dtime_end: Annotated[str | None, Query(regex=query_pattern())] = None):
    
     if dtime_start and dtime_end:
         dateFrom, timeFrom = dtime_start.split()

@@ -27,26 +27,27 @@ async def createDB():
         await connection.run_sync(SQLModel.metadata.create_all)
 
 
-async def fillDB(records: List[DisData]):
-    async with async_session() as session:
-        values = ', '.join(f"({record.MJD_date}, '{record.date_utc}', '{record.timestamp}',\
-                            {record.displacement})" for record in records)    
-        query = text(f'''INSERT INTO disdata
-                         VALUES {values}
-                         ON CONFLICT DO NOTHING;''')
-        
-        try: 
-            await session.execute(query)
-            await session.commit()
-        except:
-            await session.rollback()
+async def fillDB(records):
+    async with engine.connect() as connection:
+        async with connection.begin() as transaction:
+
+            query = text(f'''INSERT INTO disdata
+                            VALUES {records}
+                            ON CONFLICT DO NOTHING;''')
+            
+            try: 
+                await connection.execute(query)
+                await transaction.commit()
+            except:
+                await transaction.rollback()
         
 
 async def queryFromDB(dtime_start: datetime, dtime_end: datetime) -> List[DisData]:
     async with async_session() as session:
         query = text(f'''SELECT *
                     FROM disdata d
-                    WHERE d.timestamp BETWEEN '{dtime_start}' AND '{dtime_end}' ''')
+                    WHERE d.timestamp BETWEEN '{dtime_start}' AND '{dtime_end}'
+                    ORDER BY d.timestamp''')
         
         result = await session.execute(query)
 
@@ -54,5 +55,5 @@ async def queryFromDB(dtime_start: datetime, dtime_end: datetime) -> List[DisDat
 
 
 def query_pattern():
-    pattern = r'^[0-9]{4}-((0[0-9])|(1[0-2]))-(([0-2][0-9])|3[0-1]) [0-5][0-9]:[0-5][0-9]:[0-5][0-9]$'
-    return re.compile(pattern)
+    pattern = r'^[0-9]{4}-((0[1-9])|(1[0-2]))-(([0-2][1-9])|3[0-1]) [0-5][0-9]:[0-5][0-9]:[0-5][0-9]$'
+    return re.compile(pattern).pattern
