@@ -12,10 +12,10 @@ services:
       - ./templates:/templates
       - ./static:/static
     environment:
-      - TZ=Europe/Rome
-      - POSTGRES_USER=admin
-      - POSTGRES_PASSWORD=admin
-      - POSTGRES_DB=mydatabase
+      - TZ=$TZ
+      - POSTGRES_USER=$POSTGRES_USER
+      - POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+      - POSTGRES_DB=$POSTGRES_DB
     ports:
       - "80:80"
     depends_on:
@@ -29,9 +29,9 @@ services:
     image: postgre:latest
     #container_name: my-postgres-container
     environment:
-      - TZ=Europe/Rome
-      - POSTGRES_USER=admin
-      - POSTGRES_PASSWORD=admin
-      - POSTGRES_DB=mydatabase      
+      - TZ=$TZ
+      - POSTGRES_USER=$POSTGRES_USER
+      - POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+      - POSTGRES_DB=$POSTGRES_DB    
     ports:
       - "5432:5432"

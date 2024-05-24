@@ -1,161 +1,42 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[47]:
-
-
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Mar  8 13:50:22 2024
-
-@author: cts
-"""
-
 import os
-from pathlib import Path
 import asyncio
-from aiopath import AsyncPath
-import aiofiles
-from aiofiles.os import wrap
-#import csv
-#import re
-import shutil
-#import time
-import datetime
 from datetime import datetime
-import math
 import numpy as np
-#from sklearn.linear_model import LinearRegression
-#import statsmodels.api as sm
-#import matplotlib.pyplot as plt
-#import matplotlib.dates as mdates
-
 import plotly.express as px
 import pandas as pd
 from fastapi import FastAPI, Query, HTTPException, Request
 from fastapi.responses import HTMLResponse
-from typing import Annotated, List
+from typing import Annotated
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-#import requests
 import json
-from model import DisData
-from compress_json import compress, decompress
-from sql_util import *
-from zoneinfo import ZoneInfo
+from model import DisData, Range
+from sql_util import createDB, query_pattern, queryFromDB
+from fileService import FileService
 
 
-
-# In[2]:
 
 DATA_PATH = "/app/data/todo"
 DES_DATA_PATH = "/app/data/done"
 DB_PATH = "/app/data/dataDB"
-
-#TZ = os.environ.get("TZ")
-
-#files = sorted(os.listdir(DATA_PATH))
-#print(files)
-
-
-#files_basenames = []
-#for file_path in files_paths:
-#  files_basenames.append(os.path.basename(file_path))
-#print(files_basenames)
-
-
-# In[3]:
-
-move = wrap(shutil.move)
-
-class FileService():
-
-    def __init__(self, pathData: str, des_pathData):
-        self.pathData = pathData
-        self.des_pathData = des_pathData
-
-    async def get_paths(self) -> List[AsyncPath]:
-        paths = [path async for path in AsyncPath(self.pathData).iterdir()]
-        #return sorted(paths, key=os.path.getmtime)
-        return paths
     
-    async def read_file(self, file_path: AsyncPath):
-        data: str = ''
-
-        async with aiofiles.open(file_path) as file:
-            lines = await file.readlines()
-            for line in lines:
-                if line.startswith('#'):
-                    continue
-
-                x, y = line.strip().split()
-                x = float(x)
-                x_unix = (x-40587)*86400
-                date =  datetime.fromtimestamp(x_unix, tz=ZoneInfo('UTC')).replace(microsecond=False)
-
-                #data.append(DisData(MJD_date=x, date_utc=date.strftime("%Y-%m-%d %H:%M:%S%z"),
-                #                timestamp=date, displacement=float(y)))
-
-                data += f"({x}, '{date.strftime("%Y-%m-%d %H:%M:%S%z")}', '{date}', {float(y)}), "
-
-            return data.rstrip(', ')
-    
-    async def write_file(self, file_path: AsyncPath):
-        data = await self.read_file(file_path)
-        await fillDB(data)
-
-    async def process_existing_files(self):
-        await createDB()
-        paths = await self.get_paths()
-        await asyncio.gather(*[self.write_file(path) for path in paths])
-        #[await self.write_file(path) for path in paths]
-
-    
-    async def read_data(self):
-        allData: List[DisData] = list()
-        paths = await self.get_paths()
-
-        for path in paths:
-            async with aiofiles.open(path) as file:
-            
-                lines = await file.readlines()
-                for line in lines:
-                    if line.startswith('#'):
-                        continue
-
-                    x, y = line.strip().split()
-                    x = float(x)
-                    x_unix = (x-40587)*86400
-                    date =  datetime.fromtimestamp(x_unix, tz=ZoneInfo('UTC')).replace(microsecond=False)
-
-                    data = DisData(MJD_date=x, date_utc=date.strftime("%Y-%m-%d %H:%M:%S%z"), timestamp=date, displacement=float(y))
-                    allData.append(data)
-                    
-
-            await move(path, self.des_pathData)
-                
-        return allData
-    
-    async def writeToDB(self):
-
-        [await move(p, self.pathData) for p in Path(self.des_pathData).iterdir()]
-
-        await createDB()
-
-        allData = await self.read_data()
-        await fillDB(allData)
-
-    
-
 
 app = FastAPI()
+
+@app.on_event("startup")
+async def on_startup():
+    await createDB()
 
 
 @app.middleware('http')
 async def dataToDB_handler(request: Request, call_next):
     if request.url.path == "/write_toDB":
         request.scope["fileService"] = FileService(DATA_PATH, DES_DATA_PATH)
+    elif request.url.path == "/graph-data":
+        request.scope["TZ"] = os.environ.get("TZ")
 
     response = await call_next(request)
     return response
@@ -201,13 +82,12 @@ async def get_plot():
 
 
 @app.get("/graph-data")
-async def get_graph_data(dtime_start: Annotated[str, Query(regex=query_pattern())],
+async def get_graph_data(request:Request, dtime_start: Annotated[str, Query(regex=query_pattern())],
                          dtime_end: Annotated[str, Query(regex=query_pattern())]):
 
-
-    data = await queryFromDB(datetime.strptime(dtime_start, "%Y-%m-%d %H:%M:%S"),
-                               datetime.strptime(dtime_end, "%Y-%m-%d %H:%M:%S"))
-    
+    timezone = request.scope.get("TZ")
+    query_dates = Range(dtime_start=dtime_start, dtime_end=dtime_end)
+    data = await queryFromDB(query_dates, timezone)
     
     try:
         timestamps, displacements = zip(*list(map(lambda d: (d.timestamp, d.displacement), data)))
@@ -215,21 +95,25 @@ async def get_graph_data(dtime_start: Annotated[str, Query(regex=query_pattern()
         timestamps = list()
         displacements = list()
  
-
-    df = {  
+    df = {
         'graph_id': "cts",
-        'data':[{
-           'x': timestamps,
-           'y': displacements
-           }],
-       'layout':{
-           "title": "hrog output with cts corrections",
-           "xaxis": {
-               "title": 'date [s]',
+        'data': [{
+            'x': timestamps[::30],
+            'y': displacements[::30],
+            "mode": "lines",
+            "name": "CTS Time",}],
+        'layout': {
+            "title": "HROG Output with CTS Corrections",
+            "xaxis": {"title": 'Time [s]',},
+            "yaxis": {"title": 'Time Displacements [s]',},
+            "legend": {
+                "x": 1,
+                "y": 1,
+                "xanchor": 'left',
+                "yanchor": 'middle',
+                "borderwidth": 0.5
             },
-            "yaxis": {
-                "title": 'Time displacements [s]',
-            }
+            "showlegend": True
         }
     }
       
@@ -250,9 +134,10 @@ async def get_graph_data_html(request: Request,
         return templates.TemplateResponse(request=request, name="graph_corrections.html",
                                           context={"dateFrom": dateFrom, "timeFrom": timeFrom, 
                                                    "dateTo": dateTo, "timeTo":timeTo,
-                                                    "generator_interval_min": 1})
+                                                    "generator_interval_min": 5})
     
-    return templates.TemplateResponse(request=request, name="graph_corrections.html")
+    return templates.TemplateResponse(request=request, name="graph_corrections.html",
+                                       context={"generator_interval_min": 5})
 
 
 

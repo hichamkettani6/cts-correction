@@ -16,6 +16,8 @@ RUN pip install --no-cache --upgrade jinja2
 RUN pip install --no-cache --upgrade compress-json-python
 RUN pip install --no-cache --upgrade sqlmodel
 RUN pip install --no-cache --upgrade asyncpg
+RUN pip install --no-cache --upgrade asyncpgsa
+
 
 
 #ARG TZ

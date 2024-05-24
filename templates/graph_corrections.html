@@ -352,7 +352,8 @@
                             continue;
 
                         let src_cts = src.data[0];
-
+                        
+                        /*
                         // 差分を加算すると規定期間を超えてしまう場合、元データから不要なデータを削除する
                         if (src.total_sec + diff.total_sec > src.graph_span_sec) {
                             const rm_span = (src.total_sec + diff.total_sec - src.graph_span_sec);
@@ -377,21 +378,23 @@
                                 src.total_sec -= rm_span;
                             }
                         }
+                        */
 
                         // データの統合
-                        let start_sec = src.total_sec;
+                        //let start_sec = src.total_sec;
 
                         let diff_cts = diff.data[0];
 
+                        /*
                         for (let data_idx=0; data_idx<diff_cts.x.length; data_idx++) {
                             diff_cts.x[data_idx] += start_sec;
                         }
-
+                        */
                         
                         src.data[0].x = src_cts.x.concat(diff_cts.x)
                         src.data[0].y = src_cts.y.concat(diff_cts.y)
-                        src.total_sec = start_sec + diff.total_sec;
-                        src.end = diff.end;
+                        //src.total_sec = start_sec + diff.total_sec;
+                        //src.end = diff.end;
 
                         Plotly.restyle('graph-' + src.graph_id, {x:[src.data[0].x], y:[src.data[0].y]});
                     }

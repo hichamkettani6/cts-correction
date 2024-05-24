@@ -1,17 +1,12 @@
 from typing import List
-from datetime import datetime
 from sqlmodel import SQLModel
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm  import sessionmaker
 from sqlalchemy import text
-from model import DisData
+from model import DisData, Range
 import os
 import re
-from zoneinfo import ZoneInfo
-import logging
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 username = os.environ.get("POSTGRES_USER")
 password = os.environ.get("POSTGRES_PASSWORD")
@@ -42,11 +37,11 @@ async def fillDB(records):
                 await transaction.rollback()
         
 
-async def queryFromDB(dtime_start: datetime, dtime_end: datetime) -> List[DisData]:
+async def queryFromDB(range: Range, timezone: str) -> List[DisData]:
     async with async_session() as session:
-        query = text(f'''SELECT *
+        query = text(f'''SELECT timestamp AT TIME ZONE '{timezone}' AS timestamp, displacement
                     FROM disdata d
-                    WHERE d.timestamp BETWEEN '{dtime_start}' AND '{dtime_end}'
+                    WHERE d.timestamp BETWEEN '{range.dtime_start}' AND '{range.dtime_end}'
                     ORDER BY d.timestamp''')
         
         result = await session.execute(query)
