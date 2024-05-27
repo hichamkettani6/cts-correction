@@ -11,16 +11,9 @@ RUN pip install --no-cache --upgrade uvloop
 RUN pip install --no-cache --upgrade plotly
 RUN pip install --no-cache --upgrade pandas
 RUN pip install --no-cache --upgrade matplotlib
-RUN pip install --no-cache --upgrade IPython
 RUN pip install --no-cache --upgrade jinja2
-RUN pip install --no-cache --upgrade compress-json-python
 RUN pip install --no-cache --upgrade sqlmodel
 RUN pip install --no-cache --upgrade asyncpg
-RUN pip install --no-cache --upgrade asyncpgsa
 
-
-
-#ARG TZ
-#RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 CMD ["uvicorn", "app.hrog_correction_jup:app", "--reload", "--host", "0.0.0.0", "--port", "80"]

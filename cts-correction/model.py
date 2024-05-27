@@ -16,10 +16,7 @@ class Range(BaseModel):
         return values
     
     
-
-
 class DisData(SQLModel, table=True):
-    #id: int = Field(primary_key=True)
     MJD_date: float = Field(FLOAT, primary_key=True)
     date_utc: AwareDatetime = Field(sa_column=Column(TEXT))
     timestamp: AwareDatetime = Field(sa_column=Column(TIMESTAMP(timezone=True), index=True))

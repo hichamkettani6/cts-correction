@@ -52,3 +52,9 @@ class FileService():
         paths = await self.get_paths()
         await asyncio.gather(*[self.write_file(path) for path in paths])
         #[await self.write_file(path) for path in paths]
+
+    @staticmethod
+    async def create_dirs(dirs):
+        for dir in dirs:
+            if not os.path.exists(dir):
+                os.makedirs(dir)

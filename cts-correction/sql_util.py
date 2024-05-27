@@ -1,9 +1,9 @@
-from typing import List
 from sqlmodel import SQLModel
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm  import sessionmaker
-from sqlalchemy import text
-from model import DisData, Range
+from sqlalchemy import text, exc
+from model import *
+from urllib.parse import quote
 import os
 import re
 
@@ -11,7 +11,7 @@ import re
 username = os.environ.get("POSTGRES_USER")
 password = os.environ.get("POSTGRES_PASSWORD")
 database = os.environ.get("POSTGRES_DB")
-SQLALCHEMY_DATABASE_URL = f"postgresql+asyncpg://{username}:{password}@database/{database}"
+SQLALCHEMY_DATABASE_URL = f"postgresql+asyncpg://{quote(username)}:{quote(password)}@database/{quote(database)}"
 
 engine = create_async_engine(SQLALCHEMY_DATABASE_URL, echo=True)
 async_session = sessionmaker(bind=engine, expire_on_commit=False, class_=AsyncSession)
@@ -33,11 +33,11 @@ async def fillDB(records):
             try: 
                 await connection.execute(query)
                 await transaction.commit()
-            except:
+            except exc.SQLAlchemyError:
                 await transaction.rollback()
         
 
-async def queryFromDB(range: Range, timezone: str) -> List[DisData]:
+async def queryFromDB(range: Range, timezone: str):
     async with async_session() as session:
         query = text(f'''SELECT timestamp AT TIME ZONE '{timezone}' AS timestamp, displacement
                     FROM disdata d
