@@ -14,6 +14,10 @@ RUN pip install --no-cache --upgrade matplotlib
 RUN pip install --no-cache --upgrade jinja2
 RUN pip install --no-cache --upgrade sqlmodel
 RUN pip install --no-cache --upgrade asyncpg
+RUN pip install --no-cache --upgrade watchdog
+RUN pip install --no-cache --upgrade pyinotify
+RUN pip install --no-cache --upgrade pyasyncore
+
 
 
 CMD ["uvicorn", "app.hrog_correction_jup:app", "--reload", "--host", "0.0.0.0", "--port", "80"]

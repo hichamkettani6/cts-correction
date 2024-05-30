@@ -43,8 +43,12 @@ async def queryFromDB(range: Range, timezone: str):
                     FROM disdata d
                     WHERE d.timestamp BETWEEN '{range.dtime_start}' AND '{range.dtime_end}'
                     ORDER BY d.timestamp''')
+        try:
+            result = await session.execute(query)
+            await session.commit()
+        except exc.SQLAlchemyError:
+                await session.rollback()
         
-        result = await session.execute(query)
 
     return result.all()
 

@@ -13,7 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from model import DisData, Range
 from sql_util import createDB, query_pattern, queryFromDB
-from fileService import FileService
+from fileService import FileService, ObserverManager
 
 
 PATHS = {
@@ -29,6 +29,9 @@ async def on_startup():
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
     await asyncio.gather(createDB(), FileService.create_dirs(PATHS.values()))
 
+@app.on_event("shutdown")
+async def on_shutdown():
+    await ObserverManager.down()
 
 
 @app.middleware('http')
@@ -47,10 +50,14 @@ async def dataToDB_handler(request: Request, call_next):
 
 @app.get("/write_toDB")
 async def write_data_toDB(request: Request):
+    if await ObserverManager.is_up():
+        return {"status": 200, "detail": "Observer is already up!"}
+
     fileService = request.scope.get("fileService")
-    asyncio.gather(fileService.process_existing_files())
+    asyncio.gather(ObserverManager(fileService).start_observer(), fileService.process_existing_files())
 
     return {"status": 200}
+
 
 
 @app.get("/graph-data")
