@@ -14,7 +14,9 @@ from fastapi.templating import Jinja2Templates
 from model import DisData, Range
 from sql_util import createDB, query_pattern, queryFromDB
 from fileService import FileService
+from fastapi.middleware.cors import CORSMiddleware
 
+origins = os.getenv("ORIGINS","").split(",")
 
 PATHS = {
     "DATA_PATH": "/app/data/todo",
@@ -23,6 +25,14 @@ PATHS = {
     
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.on_event("startup")
 async def on_startup():

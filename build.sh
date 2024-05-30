@@ -1,7 +1,8 @@
 #!/bin/bash
-
+#!/bin/bash
+if [ ! -e "$PWD/.env" ]; then
+  echo "make .env file from .env.template"
+  exit 0
+fi
 source .env
-
-docker compose -f docker-compose-mock.yml down
-#docker compose -f docker-compose-mock.yml build --no-cache .
-docker compose -f docker-compose-mock.yml up --build
+docker build --rm -f Dockerfile . --build-arg TZ=$TZ --no-cache --network host -t cts_correction:latest

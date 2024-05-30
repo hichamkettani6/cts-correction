@@ -1,17 +1,19 @@
-from sqlmodel import SQLModel
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm  import sessionmaker
-from sqlalchemy import text, exc
-from model import *
-from urllib.parse import quote
 import os
 import re
+from urllib.parse import quote
 
+from sqlalchemy import text, exc
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker
+from sqlmodel import SQLModel
+
+from model import *
 
 username = os.environ.get("POSTGRES_USER")
 password = os.environ.get("POSTGRES_PASSWORD")
 database = os.environ.get("POSTGRES_DB")
-SQLALCHEMY_DATABASE_URL = f"postgresql+asyncpg://{quote(username)}:{quote(password)}@database/{quote(database)}"
+dbhost = os.environ.get("POSTGRES_DBHOST")
+SQLALCHEMY_DATABASE_URL = f"postgresql+asyncpg://{quote(username)}:{quote(password)}@{dbhost}/{quote(database)}"
 
 engine = create_async_engine(SQLALCHEMY_DATABASE_URL, echo=True)
 async_session = sessionmaker(bind=engine, expire_on_commit=False, class_=AsyncSession)
@@ -25,25 +27,28 @@ async def createDB():
 async def fillDB(records):
     async with engine.connect() as connection:
         async with connection.begin() as transaction:
+            query = text(
+                f"""INSERT INTO disdata
+                    VALUES {records}
+                    ON CONFLICT DO NOTHING;"""
+            )
 
-            query = text(f'''INSERT INTO disdata
-                            VALUES {records}
-                            ON CONFLICT DO NOTHING;''')
-            
-            try: 
+            try:
                 await connection.execute(query)
                 await transaction.commit()
             except exc.SQLAlchemyError:
                 await transaction.rollback()
-        
+
 
 async def queryFromDB(range: Range, timezone: str):
     async with async_session() as session:
-        query = text(f'''SELECT timestamp AT TIME ZONE '{timezone}' AS timestamp, displacement
-                    FROM disdata d
-                    WHERE d.timestamp BETWEEN '{range.dtime_start}' AND '{range.dtime_end}'
-                    ORDER BY d.timestamp''')
-        
+        query = text(
+            f"""SELECT timestamp AT TIME ZONE '{timezone}' AS timestamp, displacement
+                FROM disdata d
+                WHERE d.timestamp BETWEEN '{range.dtime_start}' AND '{range.dtime_end}'
+                ORDER BY d.timestamp"""
+        )
+
         result = await session.execute(query)
 
     return result.all()
