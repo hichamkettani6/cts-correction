@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import SQLModel
 
+
 from model import *
 
 username = os.environ.get("POSTGRES_USER")
@@ -55,5 +56,5 @@ async def queryFromDB(range: Range, timezone: str):
 
 
 def query_pattern():
-    pattern = r'^[0-9]{4}-((0[1-9])|(1[0-2]))-((0[1-9])|([1-2][0-9])|(3[0-1])) [0-5][0-9]:[0-5][0-9]:[0-5][0-9]$'
+    pattern = r'^[0-9]{4}-((0[1-9])|(1[0-2]))-((0[1-9])|([1-2][0-9])|(3[0-1])) [0-5][0-9]:[0-5][0-9]:[0-5][0-9] [0-5][0-9]:[0-5][0-9]$'
     return re.compile(pattern).pattern

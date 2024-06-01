@@ -1,336 +1,367 @@
 {% extends "base.html" %}
 
 {% block content %}
-
-<legend>Generate graphs for a specified time period.</legend>
-
-{% if not experiments %}
-<div class="alert alert-warning" role="alert">No accessible experiments exist.</div>
-{% endif %}
-
-<form class="form-horizontal">
-    <!-- Experiment select -->
-    <div class="form-group">
-        <label class="col-sm-2" for="exp">Experiment</label>
-        <div class="col-sm-10">
-            <select id="select-exp" class="selectpicker form-control" title="Choose a experiment" data-width="fit">
-                {% for exp in experiments %}
-                    <option value="{{ exp.id }},{{ exp.time_zone }}">{{ exp.title }}</option>
-                {% endfor %}
-            </select>
+    {% if not automake %}
+        <legend>Generate graphs for a specified time period.</legend>
+    {% endif %}
+    {% if not experiments %}
+        <div class="alert alert-warning {% if automake %} invisible {% endif %}"
+             role="alert">No accessible experiments
+            exist.
         </div>
-    </div>
-    <!-- From datetime picker -->
-    <div class="form-group">
-        <label class="col-sm-2">From</label>
-        <div class="col-sm-10">
-            <div class="row">
-                <div class="col-sm-7 col-xs-7">
-                    <div id="datepickFromContainer">
-                    <input type="text" value="{{ dateFrom }}" class="form-control input-small" id="datepickFrom" placeholder="From Date" autocomplete="on">
+    {% endif %}
+
+    <form class="form-horizontal" {% if automake %} style="display: none" {% endif %}>
+        <!-- Experiment select -->
+        <div class="form-group {% if automake %} invisible {% endif %}">
+            <label class="col-sm-2" for="exp">Experiment</label>
+            <div class="col-sm-10">
+                <select id="select-exp" class="selectpicker form-control"
+                        title="Choose a experiment" data-width="fit">
+                    {% for exp in experiments %}
+                        <option value="{{ exp.id }},{{ exp.time_zone }}">{{ exp.title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <!-- From datetime picker -->
+        <div class="form-group {% if automake %} invisible {% endif %}">
+            <label class="col-sm-2">From</label>
+            <div class="col-sm-10">
+                <div class="row">
+                    <div class="col-sm-7 col-xs-7">
+                        <div id="datepickFromContainer">
+                            <input type="text" value="{{ dateFrom }}"
+                                   class="form-control input-small"
+                                   id="datepickFrom" placeholder="From Date"
+                                   autocomplete="on">
+                        </div>
                     </div>
-                </div>
-                <div class="col-sm-5 col-xs-5">
-                    <div class="input-group bootstrap-timepicker timepicker">
-                        <input type="time" value="{{ timeFrom }}" step="1" class="form-control input-small" id="timepickFrom">
-                        <span class="input-group-addon"><i class="glyphicon glyphicon-time"></i></span>
+                    <div class="col-sm-5 col-xs-5">
+                        <div class="input-group bootstrap-timepicker timepicker">
+                            <input type="time" value="{{ timeFrom }}" step="1"
+                                   class="form-control input-small"
+                                   id="timepickFrom">
+                            <span class="input-group-addon"><i
+                                    class="glyphicon glyphicon-time"></i></span>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-    <!-- To datetime picker -->
-    <div class="form-group">
-        <label class="col-sm-2">To</label>
-        <div class="col-sm-10">
-            <div class="row">
-                <div class="col-sm-7 col-xs-7">
-                    <div id="datepickToContainer">
-                        <input type="text" value="{{ dateTo }}" class="form-control input-small" id="datepickTo" placeholder="To Date" autocomplete="on">
+        <!-- To datetime picker -->
+        <div class="form-group {% if automake %} invisible {% endif %}">
+            <label class="col-sm-2">To</label>
+            <div class="col-sm-10">
+                <div class="row">
+                    <div class="col-sm-7 col-xs-7">
+                        <div id="datepickToContainer">
+                            <input type="text" value="{{ dateTo }}"
+                                   class="form-control input-small"
+                                   id="datepickTo" placeholder="To Date"
+                                   autocomplete="on">
+                        </div>
                     </div>
-                </div>
-                <div class="col-sm-5 col-xs-5">
-                    <div class="input-group bootstrap-timepicker timepicker">
-                        <input type="time" value="{{ timeTo }}" step="1" class="form-control input-small" id="timepickTo">
-                        <span class="input-group-addon"><i class="glyphicon glyphicon-time"></i></span>
+                    <div class="col-sm-5 col-xs-5">
+                        <div class="input-group bootstrap-timepicker timepicker">
+                            <input type="time" value="{{ timeTo }}" step="1"
+                                   class="form-control input-small"
+                                   id="timepickTo">
+                            <span class="input-group-addon"><i
+                                    class="glyphicon glyphicon-time"></i></span>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-    <!-- Timezone, Event Datetime Range, Event Missing Periods -->
-    <div class="form-group">
-        <div id="time-info" class="col-sm-offset-2 col-sm-10 weak"></div>
-    </div>
-    <!-- Buttons -->
-    <div class="form-group">
-        <div class="col-sm-offset-2 col-sm-10">
-            <div class="btn-group">
-                <button class="btn btn-primary" id="generate-button" >Generate</button>
-                <button class="btn btn-primary" id="cancel-button" >Cancel</button>
-            </div>
-            <p>
-                <div class="progress">
-                    <div id="progress-bar" class="progress-bar" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" style="width: 0%;">
-                        0%
-                    </div>
-                </div>
-            </p>
-            <p id="message"></p>
+        <!-- Timezone, Event Datetime Range, Event Missing Periods -->
+        <div class="form-group {% if automake %} invisible {% endif %}">
+            <div id="time-info" class="col-sm-offset-2 col-sm-10 weak"></div>
         </div>
-    </div>
-</form>
+        <!-- Buttons -->
+        <div class="form-group {% if automake %} invisible {% endif %}">
+            <div class="col-sm-offset-2 col-sm-10">
+                <div class="btn-group">
+                    <button class="btn btn-primary" id="generate-button"
+                            {% if automake %} class="d-none" {% endif %}>
+                        Generate
+                    </button>
+                    <button class="btn btn-primary" id="cancel-button">Cancel
+                    </button>
+                </div>
+                <p>
 
-<div id="graph"></div>
+            </div>
+        </div>
+        <div class="progress">
+            <div id="progress-bar" class="progress-bar"
+                 role="progressbar" aria-valuenow="60"
+                 aria-valuemin="0" aria-valuemax="100"
+                 style="width: 0%;">
+                0%
+            </div>
+        </div>
+        </p>
+        <p id="message"></p>
+    </form>
 
-<script src="{{ url_for('static', path='/js/bootstrap-datepicker.min.js') }}"></script>
-<script src="{{ url_for('static', path='/js/bootstrap-timepicker.min.js') }}"></script>
-<script src="{{ url_for('static', path='/js/plotly.js') }}"></script>
-<script src="{{ url_for('static', path='/js/jquery-3.1.0.min.js') }}"></script>
-<script src="{{ url_for('static', path='/js/plotly.min.js') }}"></script>
-<script src="{{ url_for('static', path='/js/jquery-ui.min.js') }}"></script>
-<script src="{{ url_for('static', path='/js/moment.min.js') }}"></script>
-<script src="{{ url_for('static', path='/js/moment-timezone.min.js') }}"></script>
-<script src="{{ url_for('static', path='/js/FileSaver.min.js') }}"></script>
+
+    <div id="graph"></div>
+
+    <script src="{{ url_for('static', path='/js/bootstrap-datepicker.min.js') }}"></script>
+    <script src="{{ url_for('static', path='/js/bootstrap-timepicker.min.js') }}"></script>
+    <script src="{{ url_for('static', path='/js/plotly.js') }}"></script>
+    <script src="{{ url_for('static', path='/js/jquery-3.1.0.min.js') }}"></script>
+    <script src="{{ url_for('static', path='/js/plotly.min.js') }}"></script>
+    <script src="{{ url_for('static', path='/js/jquery-ui.min.js') }}"></script>
+    <script src="{{ url_for('static', path='/js/moment.min.js') }}"></script>
+    <script src="{{ url_for('static', path='/js/moment-timezone.min.js') }}"></script>
+    <script src="{{ url_for('static', path='/js/FileSaver.min.js') }}"></script>
 
 
-<script>
-    'use strict';
+    <script>
+        'use strict';
 
-    let exp = null;
-    let timezone = null;
-    const generator_interval_min = {{ generator_interval_min }};
+        let exp = null;
+        let timezone = null;
+        const generator_interval_min = {{ generator_interval_min }};
 
-    $('#select-exp').on('change', function() {
-        console.log('select-exp change')
-        console.log('exp', $('#select-exp').val());
+        $('#select-exp').on('change', function () {
+            console.log('select-exp change')
+            console.log('exp', $('#select-exp').val());
 
-        exp = parseInt($('#select-exp').val().split(',')[0]);
-        timezone = $('#select-exp').val().split(',')[1];
-        console.log(exp, timezone);
+            exp = parseInt($('#select-exp').val().split(',')[0]);
+            timezone = $('#select-exp').val().split(',')[1];
+            console.log(exp, timezone);
 
-        // 実験の日時範囲を取得
-        $.postJSON('/api_experiment_range', {
-            experiment: exp
-        }).done(function(json) {
-            console.log(json);
+            // 実験の日時範囲を取得
+            $.postJSON('/api_experiment_range', {
+                experiment: exp
+            }).done(function (json) {
+                console.log(json);
 
-            let end = new Date(json.end);
-            console.log(end.getHours());
-            console.log(end.getMinutes());
-            console.log(end.getSeconds());
-            console.log(end.getMilliseconds());
-            //if (end.getHours() != 0 || end.getMinutes() != 0 || end.getSeconds() != 0 || end.getMilliseconds() != 0) {
-            //    console.log('add')
-            //    end.setDate(end.getDate() + 1);
-            //}
-            //end.setSecond(end.getSecond() - 1);
+                let end = new Date(json.end);
+                console.log(end.getHours());
+                console.log(end.getMinutes());
+                console.log(end.getSeconds());
+                console.log(end.getMilliseconds());
+                //if (end.getHours() != 0 || end.getMinutes() != 0 || end.getSeconds() != 0 || end.getMilliseconds() != 0) {
+                //    console.log('add')
+                //    end.setDate(end.getDate() + 1);
+                //}
+                //end.setSecond(end.getSecond() - 1);
 
-            $('#datepickFrom').datepicker({
-                format: 'yyyy-mm-dd',
-                startDate: new Date(json.start),
-                endDate: new Date(json.end),
-                orientation: 'bottom',
-            });
+                $('#datepickFrom').datepicker({
+                    format: 'yyyy-mm-dd',
+                    startDate: new Date(json.start),
+                    endDate: new Date(json.end),
+                    orientation: 'bottom',
+                });
 
-            $('#datepickTo').datepicker({
-                format: 'yyyy-mm-dd',
-                startDate: new Date(json.start),
-                endDate: new Date(end),
-                orientation: 'bottom',
-            });
+                $('#datepickTo').datepicker({
+                    format: 'yyyy-mm-dd',
+                    startDate: new Date(json.start),
+                    endDate: new Date(end),
+                    orientation: 'bottom',
+                });
 
-            $("#timepickFrom").timepicker({
-                maxHours:24,
-                showMeridian:false,
-                showInputs:false,
-                showSeconds:true,
-                minuteStep:1,
-                secondStep:10,
-                defaultTime:'00:00:00'
-            });
+                $("#timepickFrom").timepicker({
+                    maxHours: 24,
+                    showMeridian: false,
+                    showInputs: false,
+                    showSeconds: true,
+                    minuteStep: 1,
+                    secondStep: 10,
+                    defaultTime: '00:00:00'
+                });
 
-            $("#timepickTo").timepicker({
-                maxHours:24,
-                showMeridian:false,
-                showInputs:false,
-                showSeconds:true,
-                minuteStep:1,
-                secondStep:10,
-                defaultTime:'00:00:00'
-            });
+                $("#timepickTo").timepicker({
+                    maxHours: 24,
+                    showMeridian: false,
+                    showInputs: false,
+                    showSeconds: true,
+                    minuteStep: 1,
+                    secondStep: 10,
+                    defaultTime: '00:00:00'
+                });
 
-            $('#datepickFrom').prop('disabled', false);
-            $('#datepickTo').prop('disabled', false);
-            $('#timepickFrom').prop('disabled', false);
-            $('#timepickTo').prop('disabled', false);
-            $('#generate-button').prop('disabled', false);
+                $('#datepickFrom').prop('disabled', false);
+                $('#datepickTo').prop('disabled', false);
+                $('#timepickFrom').prop('disabled', false);
+                $('#timepickTo').prop('disabled', false);
+                $('#generate-button').prop('disabled', false);
 
-            let $info = $('#time-info');
-            $info.empty();
-            $info.append(`<div>Range: ${ datetimeSecFormat(json.start, timezone) } - ${ datetimeSecFormat(json.end, timezone) }</div>`);
-        }).fail(function() {
-            console.log('fail');
+                let $info = $('#time-info');
+                $info.empty();
+                $info.append(`<div>Range: ${datetimeSecFormat(json.start, timezone)} - ${datetimeSecFormat(json.end, timezone)}</div>`);
+            }).fail(function () {
+                console.log('fail');
+            })
         })
-    })
 
-    $(document).ready(function() {
-        $('#datepickFrom').datepicker({dateFormat: 'yy-mm-dd'});
-        $('#datepickTo').datepicker({dateFormat: 'yy-mm-dd'});
+        $(document).ready(function () {
+            $('#datepickFrom').datepicker({dateFormat: 'yy-mm-dd'});
+            $('#datepickTo').datepicker({dateFormat: 'yy-mm-dd'});
 
-        var dateFrom = $("#datepickFrom").val();
-        var dateTo = $("#datepickTo").val();
-        var timeFrom = $("#timepickFrom").val();
-        var timeTo = $("#timepickTo").val();
+            var dateFrom = $("#datepickFrom").val();
+            var dateTo = $("#datepickTo").val();
+            var timeFrom = $("#timepickFrom").val();
+            var timeTo = $("#timepickTo").val();
 
-        if (dateFrom && dateTo && timeFrom && timeTo)
-            $("#generate-button").trigger('click'); 
-    })
-
-
-    $('#time-info').on('click', '#event-missing-periods-link', function() {
-        console.log('xxxx');
-        $('#event-missing-periods').toggleClass('hide');
-        return false;
-    });
+            if (dateFrom && dateTo && timeFrom && timeTo)
+                $("#generate-button").trigger('click');
+        })
 
 
-    let graph_json = null;
-    let queue = [];
-    let queue_index = null;
-    let canceled = false;
+        $('#time-info').on('click', '#event-missing-periods-link', function () {
+            console.log('xxxx');
+            $('#event-missing-periods').toggleClass('hide');
+            return false;
+        });
 
 
-    $('#generate-button').on('click', function() {
-        try {
-            $('#message').empty();
-            $('#generate-button').prop('disabled', true);
-            $('#cancel-button').prop('disabled', false);
+        let graph_json = null;
+        let queue = [];
+        let queue_index = null;
+        let canceled = false;
 
-            console.log('generate');
-            console.log(`exp: ${exp}`);
-            console.log(`from date: ${$("#datepickFrom").datepicker().val()}`);
-            console.log(`from time: ${$("#timepickFrom").val()}`);
-            console.log(`  to date: ${$("#datepickTo").datepicker().val()}`);
-            console.log(`  to time: ${$("#timepickTo").val()}`);
+        function generate() {
+            try {
+                $('#message').empty();
+                $('#generate-button').prop('disabled', true);
+                $('#cancel-button').prop('disabled', false);
 
-            console.log(timezone);
+                console.log('generate');
+                console.log(`exp: ${exp}`);
+                console.log(`from date: ${$("#datepickFrom").datepicker().val()}`);
+                console.log(`from time: ${$("#timepickFrom").val()}`);
+                console.log(`  to date: ${$("#datepickTo").datepicker().val()}`);
+                console.log(`  to time: ${$("#timepickTo").val()}`);
 
-            let fromDate = moment.tz(`${$("#datepickFrom").datepicker().val()} ${$("#timepickFrom").val()}`, 'YYYY-M-D H:m:s', timezone);
-            console.log(`fromDate is ${fromDate.isValid() ? 'valid' : 'invalid'}`);
-            console.log(`fromDate: ${fromDate.format()}`);
+                console.log(timezone);
 
-            let toDate = moment.tz(`${$("#datepickTo").datepicker().val()} ${$("#timepickTo").val()}`, 'YYYY-M-D H:m:s', timezone)
-            console.log(`toDate is ${toDate.isValid() ? 'valid' : 'invalid'}`);
-            console.log(`toDate: ${toDate.format()}`);
+                let fromDate = moment.tz(`${$("#datepickFrom").datepicker().val()} ${$("#timepickFrom").val()}`, 'YYYY-M-D H:m:s', timezone);
+                console.log(`fromDate is ${fromDate.isValid() ? 'valid' : 'invalid'}`);
+                console.log(`fromDate: ${fromDate.format()}`);
 
-            if (!fromDate.isValid() || !toDate.isValid()) {
-                if (!fromDate.isValid())
-                    set_message('#message', 'danger', 'From Date is invalid.');
-                else if (!toDate.isValid())
-                    set_message('#message', 'danger', 'To Date is invalid.');
+                let toDate = moment.tz(`${$("#datepickTo").datepicker().val()} ${$("#timepickTo").val()}`, 'YYYY-M-D H:m:s', timezone)
+                console.log(`toDate is ${toDate.isValid() ? 'valid' : 'invalid'}`);
+                console.log(`toDate: ${toDate.format()}`);
+
+                if (!fromDate.isValid() || !toDate.isValid()) {
+                    if (!fromDate.isValid())
+                        set_message('#message', 'danger', 'From Date is invalid.');
+                    else if (!toDate.isValid())
+                        set_message('#message', 'danger', 'To Date is invalid.');
+                    $('#generate-button').prop('disabled', false);
+                    $('#cancel-button').prop('disabled', true);
+                    return false;
+                }
+
+                if (toDate <= fromDate) {
+                    set_message('#message', 'danger', '"To Date Time" must be a value after "From Date Time".');
+                    $('#generate-button').prop('disabled', false);
+                    $('#cancel-button').prop('disabled', true);
+                    return false;
+                }
+
+                initGraphs();  // グラフの初期化
+
+                let cur = fromDate.clone();
+                while (cur < toDate) {
+                    let prev = cur.clone();
+                    cur.add(generator_interval_min, 'minutes');
+                    if (cur > toDate)
+                        cur = toDate.clone();
+                    console.assert(prev < cur);
+                    console.assert(cur <= toDate);
+                    queue.push([prev.format(), cur.format()]);
+                    queue_index = 0;
+                }
+                console.log('queue:', queue);
+
+                nextQuery();  // 最初のクエリを発行する
+            } catch (error) {
+                console.error(error);
                 $('#generate-button').prop('disabled', false);
                 $('#cancel-button').prop('disabled', true);
-                return false;
             }
 
-            if (toDate <= fromDate) {
-                set_message('#message', 'danger', '"To Date Time" must be a value after "From Date Time".');
-                $('#generate-button').prop('disabled', false);
-                $('#cancel-button').prop('disabled', true);
-                return false;
-            }
-
-            initGraphs();  // グラフの初期化
-
-            let cur = fromDate.clone();
-            while (cur < toDate) {
-                let prev = cur.clone();
-                cur.add(generator_interval_min, 'minutes');
-                if (cur > toDate)
-                    cur = toDate.clone();
-                console.assert(prev < cur);
-                console.assert(cur <= toDate);
-                queue.push([prev.format(), cur.format()]);
-                queue_index = 0;
-            }
-            console.log('queue:', queue);
-
-            nextQuery();  // 最初のクエリを発行する
-        } catch (error) {
-            console.error(error);
-            $('#generate-button').prop('disabled', false);
-            $('#cancel-button').prop('disabled', true);
+            return false;
         }
 
-        return false;
-    });
+        {% if automake %}
+            generate();
+        {%  else %}
+            $('#generate-button').on('click', function () {
+                generate();
+            });
+        {%  endif %}
 
-
-    $('#cancel-button').on('click', function() {
-        canceled = true;
-        setProgressBar(false);
-        $('#generate-button').prop('disabled', false);
-        $('#cancel-button').prop('disabled', true);
-        console.log('cancel');
-        return false;
-    });
-
-
-    function setProgressBar(active) {
-        let elem = $('#progress-bar');
-
-        elem.toggleClass('progress-bar-striped active', active);
-    }
-
-
-    function updateProgressBar(val) {
-        setProgressBar(true);
-
-        let elem = $('#progress-bar');
-        val = `${Math.floor(val)}%`
-        elem.text(val);
-        elem.css('width', val);
-    }
-
-
-    function initGraphs() {
-        $('#graph').empty();
-        graph_json = null;
-        queue = [];
-        queue_index = null;
-        canceled = false;
-        updateProgressBar(0);
-    }
-
-
-    function nextQuery() {
-        if (queue.length == 0 || queue_index >= queue.length) {
+        $('#cancel-button').on('click', function () {
+            canceled = true;
             setProgressBar(false);
             $('#generate-button').prop('disabled', false);
             $('#cancel-button').prop('disabled', true);
-            console.log('complete');
-            return;
+            console.log('cancel');
+            return false;
+        });
+
+
+        function setProgressBar(active) {
+            let elem = $('#progress-bar');
+
+            elem.toggleClass('progress-bar-striped active', active);
         }
 
-        let range = queue[queue_index++];
-        console.log('query range:', range);
 
-        $.getJSON('/graph-data', {
-            dtime_start: range[0].replace('Z', '').replace('T', ' '),
-            dtime_end: range[1].replace('Z', '').replace('T', ' '),
-        }).done(function(json) {
-            if (canceled)
+        function updateProgressBar(val) {
+            setProgressBar(true);
+
+            let elem = $('#progress-bar');
+            val = `${Math.floor(val)}%`
+            elem.text(val);
+            elem.css('width', val);
+        }
+
+
+        function initGraphs() {
+            $('#graph').empty();
+            graph_json = null;
+            queue = [];
+            queue_index = null;
+            canceled = false;
+            updateProgressBar(0);
+        }
+
+
+        function nextQuery() {
+            if (queue.length == 0 || queue_index >= queue.length) {
+                setProgressBar(false);
+                $('#generate-button').prop('disabled', false);
+                $('#cancel-button').prop('disabled', true);
+                console.log('complete');
                 return;
+            }
 
-            console.log('done', json);
+            let range = queue[queue_index++];
+            console.log('query range:', range);
 
-            if ($('#graph').children().length == 0) {
-                // 初回の場合（#graph の子供がいない）
-                graph_json = json;
-                json.list.forEach(function(graph_data, index) {
-                    // グラフごとの処理
-                    $('#graph').append($(`
+            $.getJSON('/graph-data', {
+                dtime_start: range[0].replace('Z', '').replace('T', ' '),
+                dtime_end: range[1].replace('Z', '').replace('T', ' '),
+            }).done(function (json) {
+                if (canceled)
+                    return;
+
+                console.log('done', json);
+
+                if ($('#graph').children().length == 0) {
+                    // 初回の場合（#graph の子供がいない）
+                    graph_json = json;
+                    json.list.forEach(function (graph_data, index) {
+                        // グラフごとの処理
+                        $('#graph').append($(`
                         <div class="pull-right">
                             <button class="btn btn-default btn-xs download-csv" data-graph-id="${graph_data.graph_id}" data-is-all="false">Download CSV</button>
                             <button class="btn btn-default btn-xs download-csv" data-graph-id="${graph_data.graph_id}" data-is-all="true" >Download CSV (All GPS Time)</button>
@@ -339,90 +370,93 @@
                         <div id="graph-${graph_data.graph_id}">
                         </div>
                     `));
-                    Plotly.newPlot('graph-' + graph_data.graph_id, graph_data.data, graph_data.layout);
-                });
-            } else {
-                // 2回目以降の場合
-                for (let idx=0; idx<json.list.length; idx++) {
-                    const diff = json.list[idx];
+                        Plotly.newPlot('graph-' + graph_data.graph_id, graph_data.data, graph_data.layout);
+                    });
+                } else {
+                    // 2回目以降の場合
+                    for (let idx = 0; idx < json.list.length; idx++) {
+                        const diff = json.list[idx];
 
-                    for (let idx2=0; idx2<graph_json.list.length; idx2++) {
-                        const src = graph_json.list[idx2];
-                        if (src.graph_id != diff.graph_id)
-                            continue;
+                        for (let idx2 = 0; idx2 < graph_json.list.length; idx2++) {
+                            const src = graph_json.list[idx2];
+                            if (src.graph_id != diff.graph_id)
+                                continue;
 
-                        let src_cts = src.data[0];
-                        
-                        /*
-                        // 差分を加算すると規定期間を超えてしまう場合、元データから不要なデータを削除する
-                        if (src.total_sec + diff.total_sec > src.graph_span_sec) {
-                            const rm_span = (src.total_sec + diff.total_sec - src.graph_span_sec);
+                            let src_cts = src.data[0];
 
-                            if (rm_span >= src.total_sec) {
-                                src_cts.x = [];
-                                src_cts.y = [];
-                                src.total_sec = 0;
-                            } else {
-                            
-                                for (let data_idx=0; data_idx<src_cts.x.length; data_idx++) {
-                                    if (src_cts.x[data_idx] >= rm_span) {
-                                        src_cts.x = src_cts.x.slice(data_idx)
-                                        src_cts.y = src_cts.y.slice(data_idx);
-                                        break;
+                            /*
+                            // 差分を加算すると規定期間を超えてしまう場合、元データから不要なデータを削除する
+                            if (src.total_sec + diff.total_sec > src.graph_span_sec) {
+                                const rm_span = (src.total_sec + diff.total_sec - src.graph_span_sec);
+
+                                if (rm_span >= src.total_sec) {
+                                    src_cts.x = [];
+                                    src_cts.y = [];
+                                    src.total_sec = 0;
+                                } else {
+
+                                    for (let data_idx=0; data_idx<src_cts.x.length; data_idx++) {
+                                        if (src_cts.x[data_idx] >= rm_span) {
+                                            src_cts.x = src_cts.x.slice(data_idx)
+                                            src_cts.y = src_cts.y.slice(data_idx);
+                                            break;
+                                        }
                                     }
-                                }
-                                for (let data_idx=0; data_idx<src_cts.x.length; data_idx++) {
-                                    src_cts.x[data_idx] -= rm_span;
-                                }
+                                    for (let data_idx=0; data_idx<src_cts.x.length; data_idx++) {
+                                        src_cts.x[data_idx] -= rm_span;
+                                    }
 
-                                src.total_sec -= rm_span;
+                                    src.total_sec -= rm_span;
+                                }
                             }
+                            */
+
+                            // データの統合
+                            //let start_sec = src.total_sec;
+
+                            let diff_cts = diff.data[0];
+
+                            /*
+                            for (let data_idx=0; data_idx<diff_cts.x.length; data_idx++) {
+                                diff_cts.x[data_idx] += start_sec;
+                            }
+                            */
+
+                            src.data[0].x = src_cts.x.concat(diff_cts.x)
+                            src.data[0].y = src_cts.y.concat(diff_cts.y)
+                            //src.total_sec = start_sec + diff.total_sec;
+                            //src.end = diff.end;
+
+                            Plotly.restyle('graph-' + src.graph_id, {
+                                x: [src.data[0].x],
+                                y: [src.data[0].y]
+                            });
                         }
-                        */
-
-                        // データの統合
-                        //let start_sec = src.total_sec;
-
-                        let diff_cts = diff.data[0];
-
-                        /*
-                        for (let data_idx=0; data_idx<diff_cts.x.length; data_idx++) {
-                            diff_cts.x[data_idx] += start_sec;
-                        }
-                        */
-                        
-                        src.data[0].x = src_cts.x.concat(diff_cts.x)
-                        src.data[0].y = src_cts.y.concat(diff_cts.y)
-                        //src.total_sec = start_sec + diff.total_sec;
-                        //src.end = diff.end;
-
-                        Plotly.restyle('graph-' + src.graph_id, {x:[src.data[0].x], y:[src.data[0].y]});
                     }
                 }
-            }
 
-            // プログレスバーの更新および次のクエリー処理
-            updateProgressBar(queue_index / queue.length * 100);
-            nextQuery();
+                // プログレスバーの更新および次のクエリー処理
+                updateProgressBar(queue_index / queue.length * 100);
+                nextQuery();
 
-        }).fail(function(jqXHR, statusText, errorThrown) {
-            console.log('jqXHR:', jqXHR);
-            console.log('statusText:', statusText);
-            console.log('errorThrown:', errorThrown);
-            set_message('#message', 'danger', `${jqXHR.statusText} (${jqXHR.status})`);
+            }).fail(function (jqXHR, statusText, errorThrown) {
+                console.log('jqXHR:', jqXHR);
+                console.log('statusText:', statusText);
+                console.log('errorThrown:', errorThrown);
+                set_message('#message', 'danger', `${jqXHR.statusText} (${jqXHR.status})`);
 
-            $('#generate-button').prop('disabled', false);
-            $('#cancel-button').prop('disabled', true);
-            setProgressBar(false);
+                $('#generate-button').prop('disabled', false);
+                $('#cancel-button').prop('disabled', true);
+                setProgressBar(false);
+            });
+        }
+
+
+        $('div#graph').on('click', 'button.download-csv', function ($elem) {
+            $elem = $($elem.target);
+            downloadCsv(graph_json, $elem.data('graph-id'), $elem.data('is-all'));
         });
-    }
 
-
-    $('div#graph').on('click', 'button.download-csv', function($elem) {
-        $elem = $($elem.target);
-        downloadCsv(graph_json, $elem.data('graph-id'), $elem.data('is-all'));
-    });
-
-</script>
+    </script>
 
 {% endblock %}

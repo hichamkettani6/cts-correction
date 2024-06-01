@@ -15,14 +15,16 @@ from model import DisData, Range
 from sql_util import createDB, query_pattern, queryFromDB
 from fileService import FileService
 from fastapi.middleware.cors import CORSMiddleware
+from urllib.parse import unquote
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
-origins = os.getenv("ORIGINS","").split(",")
+origins = os.getenv("ORIGINS", "").split(",")
 
 PATHS = {
     "DATA_PATH": "/app/data/todo",
     "DES_DATA_PATH": "/app/data/done"
-    }
-    
+}
 
 app = FastAPI()
 
@@ -34,17 +36,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.on_event("startup")
 async def on_startup():
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
     await asyncio.gather(createDB(), FileService.create_dirs(PATHS.values()))
 
 
-
 @app.middleware('http')
 async def dataToDB_handler(request: Request, call_next):
     if request.url.path == "/write_toDB":
-        request.scope["fileService"] = FileService(PATHS["DATA_PATH"], PATHS["DES_DATA_PATH"])
+        request.scope["fileService"] = FileService(PATHS["DATA_PATH"],
+                                                   PATHS["DES_DATA_PATH"])
     elif request.url.path == "/graph-data":
         request.scope["TZ"] = os.environ.get("TZ")
     elif request.url.path == "/graph-data-html":
@@ -64,30 +67,30 @@ async def write_data_toDB(request: Request):
 
 
 @app.get("/graph-data")
-async def get_graph_data(request:Request, dtime_start: Annotated[str, Query(regex=query_pattern())],
-                         dtime_end: Annotated[str, Query(regex=query_pattern())]):
-
+async def get_graph_data(request: Request,
+                         dtime_start: str,
+                         dtime_end: str):
     timezone = request.scope.get("TZ")
     query_dates = Range(dtime_start=dtime_start, dtime_end=dtime_end)
     data = await queryFromDB(query_dates, timezone)
-    
+
     try:
         timestamps, displacements = zip(*data)
     except ValueError:
         timestamps = list()
         displacements = list()
- 
+
     df = {
         'graph_id': "cts",
         'data': [{
             'x': timestamps[::30],
             'y': displacements[::30],
             "mode": "lines",
-            "name": "CTS Time",}],
+            "name": "CTS Time", }],
         'layout': {
             "title": "HROG Output with CTS Corrections",
-            "xaxis": {"title": 'Time [s]',},
-            "yaxis": {"title": 'Time Displacements [s]',},
+            "xaxis": {"title": 'Time [s]', },
+            "yaxis": {"title": 'Time Displacements [s]', },
             "legend": {
                 "x": 1,
                 "y": 1,
@@ -98,24 +101,35 @@ async def get_graph_data(request:Request, dtime_start: Annotated[str, Query(rege
             "showlegend": True
         }
     }
-      
+
     return {"list": [df]}
 
 
 @app.get("/graph-data-html", response_class=HTMLResponse)
-async def get_graph_data_html(request: Request,
-                              dtime_start: Annotated[str | None, Query(regex=query_pattern())] = None,
-                              dtime_end: Annotated[str | None, Query(regex=query_pattern())] = None):
-
+async def get_graph_data_html(
+        request: Request,
+        dtime_start: str,
+        dtime_end: str,
+        automake: bool = False):
     templates = request.scope.get("templates")
-
+    timezone = os.environ.get("TZ")
+    dt_start = datetime.fromisoformat(unquote(dtime_start)).astimezone(
+        ZoneInfo(timezone))
+    dt_end = datetime.fromisoformat(unquote(dtime_end)).astimezone(
+        ZoneInfo(timezone))
+    print(dtime_start)
+    print(dt_end)
     if dtime_start and dtime_end:
-        dateFrom, timeFrom = dtime_start.split()
-        dateTo, timeTo = dtime_end.split()
+        dateFrom = dt_start.date()
+        timeFrom = dt_start.time()
+        dateTo = dt_end.date()
+        timeTo = dt_end.time()
         return templates.TemplateResponse(request=request, name="graph_corrections.html",
-                                          context={"dateFrom": dateFrom, "timeFrom": timeFrom, 
-                                                   "dateTo": dateTo, "timeTo":timeTo,
-                                                    "generator_interval_min": 5})
-    
+                                          context={"dateFrom": dateFrom,
+                                                   "timeFrom": timeFrom,
+                                                   "dateTo": dateTo, "timeTo": timeTo,
+                                                   "generator_interval_min": 5,
+                                                   "automake": automake})
+
     return templates.TemplateResponse(request=request, name="graph_corrections.html",
-                                       context={"generator_interval_min": 5})
+                                      context={"generator_interval_min": 5})
