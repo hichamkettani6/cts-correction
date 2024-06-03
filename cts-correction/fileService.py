@@ -49,12 +49,12 @@ class FileService():
                 cnt += 1
                 if cnt == 20:
                     cnt = 0
-                    insert = await fillDB(data)
+                    insert = await fillDB(data.rstrip(', '))
                     if not insert:
                         return False
             if cnt > 0:
                 cnt = 0
-                insert = await fillDB(data)
+                insert = await fillDB(data.rstrip(', '))
                 if not insert:
                     return False
             return True
