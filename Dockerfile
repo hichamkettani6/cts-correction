@@ -16,4 +16,4 @@ RUN pip install --no-cache --upgrade sqlmodel
 RUN pip install --no-cache --upgrade asyncpg
 
 
-CMD ["uvicorn", "app.hrog_correction_jup:app", "--reload", "--host", "0.0.0.0", "--port", "80"]
+CMD ["uvicorn", "app.hrog_correction_jup:app", "--reload", "--host", "0.0.0.0", "--port", "80" , "--proxy-headers", '--forwarded-allow-ips="*"']
