@@ -108,8 +108,8 @@ async def get_graph_data(request: Request,
 @app.get("/graph-data-html", response_class=HTMLResponse)
 async def get_graph_data_html(
         request: Request,
-        dtime_start: str,
-        dtime_end: str,
+        dtime_start: str="",
+        dtime_end: str="",
         automake: bool = False):
     templates = request.scope.get("templates")
     timezone = os.environ.get("TZ")
