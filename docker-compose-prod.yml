@@ -29,7 +29,7 @@ services:
     privileged: true
     #container_name: my-postgres-container
     healthcheck:
-      test: /usr/bin/pg_isready
+      test: "pg_isready -h db"
       interval: 5s
       timeout: 10s
       retries: 120
@@ -39,6 +39,7 @@ services:
 #      - "5432:5432"
     volumes:
       - ./hrog_db:/var/lib/postgresql/data 777
+    user: "root"
     networks:
       - irevs_cts_net
     restart: always
