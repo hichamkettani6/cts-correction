@@ -30,7 +30,7 @@ services:
     #container_name: my-postgres-container
     healthcheck:
       test: "pg_isready -h db"
-      interval: 5s
+      interval: 20s
       timeout: 10s
       retries: 120
     env_file:
