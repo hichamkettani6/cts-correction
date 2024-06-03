@@ -48,8 +48,8 @@ class FileService():
             return data.rstrip(', ')
 
     async def write_file(self, file_path: AsyncPath):
-        data = await self.read_file(file_path)
         if not "working.dat" in file_path.name:
+            data = await self.read_file(file_path)
             await asyncio.gather(fillDB(data), move(file_path, self.des_pathData))
 
     async def process_existing_files(self):
