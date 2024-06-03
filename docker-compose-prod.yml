@@ -27,7 +27,6 @@ services:
   database:
     image: postgres:16.2
     #container_name: my-postgres-container
-    privileged: true
     healthcheck:
       test: /usr/bin/pg_isready
       interval: 5s
