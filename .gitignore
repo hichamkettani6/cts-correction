@@ -5,6 +5,7 @@ db_data
 *.pyc
 venv
 env
+.env
 key.json
 jwt_setting.json
 .idea
