@@ -61,7 +61,7 @@ async def dataToDB_handler(request: Request, call_next):
 @app.get("/write_toDB")
 async def write_data_toDB(request: Request):
     fileService = request.scope.get("fileService")
-    asyncio.gather(fileService.process_existing_files())
+    await asyncio.gather(fileService.process_existing_files())
 
     return {"status": 200}
 
