@@ -38,7 +38,7 @@ services:
 #    ports:
 #      - "5432:5432"
     volumes:
-      - /hrog_db:/var/lib/postgresql/data
+      - /hrog_db:/var/lib/postgresql/data 777
     networks:
       - irevs_cts_net
     restart: always
