@@ -6,10 +6,11 @@ from sqlalchemy import text, exc
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlmodel import SQLModel
-
+import logging
 
 from model import *
 
+logger = logging.getLogger(__name__)
 username = os.environ.get("POSTGRES_USER")
 password = os.environ.get("POSTGRES_PASSWORD")
 database = os.environ.get("POSTGRES_DB")
@@ -25,9 +26,10 @@ async def createDB():
         await connection.run_sync(SQLModel.metadata.create_all)
 
 
-async def fillDB(records):
+async def fillDB(records) -> bool:
     async with engine.connect() as connection:
         async with connection.begin() as transaction:
+            logger.info(f"Try to insert  {len(records)} records \n")
             query = text(
                 f"""INSERT INTO disdata
                     VALUES {records}
@@ -37,8 +39,11 @@ async def fillDB(records):
             try:
                 await connection.execute(query)
                 await transaction.commit()
-            except exc.SQLAlchemyError:
+                return True
+            except exc.SQLAlchemyError as e:
+                logger.error(f"Error in insert data {e} \n", exc_info=True)
                 await transaction.rollback()
+                return False
 
 
 async def queryFromDB(range: Range, timezone: str):

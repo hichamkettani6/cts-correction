@@ -18,6 +18,45 @@ from fastapi.middleware.cors import CORSMiddleware
 from urllib.parse import unquote
 from datetime import datetime
 from zoneinfo import ZoneInfo
+import logging
+import logging.config
+
+ROOT_LEVEL = "INFO"
+
+LOGGING_CONFIG = {
+    "version": 1,
+    "disable_existing_loggers": True,
+    "formatters": {
+        "standard": {"format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s"},
+    },
+    "handlers": {
+        "default": {
+            "level": "INFO",
+            "formatter": "standard",
+            "class": "logging.StreamHandler",
+            "stream": "ext://sys.stdout",  # Default is stderr
+        },
+    },
+    "loggers": {
+        "": {  # root logger
+            "level": ROOT_LEVEL, #"INFO",
+            "handlers": ["default"],
+            "propagate": False,
+        },
+        "uvicorn.error": {
+            "level": "DEBUG",
+            "handlers": ["default"],
+        },
+        "uvicorn.access": {
+            "level": "DEBUG",
+            "handlers": ["default"],
+        },
+    },
+}
+
+logging.config.dictConfig(LOGGING_CONFIG)
+
+logger = logging.getLogger(__name__)
 
 origins = os.getenv("ORIGINS", "").split(",")
 
@@ -60,8 +99,9 @@ async def dataToDB_handler(request: Request, call_next):
 
 @app.get("/write_toDB")
 async def write_data_toDB(request: Request):
+    logger.info("write_data_toDB")
     fileService = request.scope.get("fileService")
-    await asyncio.gather(fileService.process_existing_files())
+    await fileService.process_existing_files()
 
     return {"status": 200}
 

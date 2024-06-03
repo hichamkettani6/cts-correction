@@ -8,10 +8,11 @@ from zoneinfo import ZoneInfo
 import aiofiles
 from aiofiles.os import wrap
 from aiopath import AsyncPath
-
+import logging
 from sql_util import fillDB
 
 move = wrap(shutil.move)
+logger = logging.getLogger(__name__)
 
 
 class FileService():
@@ -50,11 +51,17 @@ class FileService():
     async def write_file(self, file_path: AsyncPath):
         if not "working.dat" in file_path.name:
             data = await self.read_file(file_path)
-            await asyncio.gather(fillDB(data), move(file_path, self.des_pathData))
+            insert = await fillDB(data)
+            if insert:
+                logger.info("Insert Ok move file")
+                await move(file_path, self.des_pathData)
 
     async def process_existing_files(self):
         paths = await self.get_paths()
-        await asyncio.gather(*[self.write_file(path) for path in paths])
+        # await asyncio.gather(*[ ])
+        for path in paths:
+            logger.info(f"process file {path.name}")
+            await self.write_file(path)
         # [await self.write_file(path) for path in paths]
 
     @staticmethod
