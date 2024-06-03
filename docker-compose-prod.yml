@@ -27,7 +27,7 @@ services:
   database:
     image: postgres:16.2
     #container_name: my-postgres-container
-    privileged: true
+#    privileged: true
     healthcheck:
       test: /usr/bin/pg_isready
       interval: 5s
@@ -39,6 +39,7 @@ services:
 #      - "5432:5432"
     volumes:
       - /hrog_db:/var/lib/postgresql/data
+    user: 999
     networks:
       - irevs_cts_net
     restart: always
