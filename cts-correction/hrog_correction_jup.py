@@ -113,13 +113,14 @@ async def get_graph_data_html(
         automake: bool = False):
     templates = request.scope.get("templates")
     timezone = os.environ.get("TZ")
-    dt_start = datetime.fromisoformat(unquote(dtime_start)).astimezone(
-        ZoneInfo(timezone))
-    dt_end = datetime.fromisoformat(unquote(dtime_end)).astimezone(
-        ZoneInfo(timezone))
-    print(dtime_start)
-    print(dt_end)
+
     if dtime_start and dtime_end:
+        dt_start = datetime.fromisoformat(unquote(dtime_start)).astimezone(
+            ZoneInfo(timezone))
+        dt_end = datetime.fromisoformat(unquote(dtime_end)).astimezone(
+            ZoneInfo(timezone))
+        print(dtime_start)
+        print(dt_end)
         dateFrom = dt_start.date()
         timeFrom = dt_start.time()
         dateTo = dt_end.date()
