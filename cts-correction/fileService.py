@@ -31,6 +31,7 @@ class FileService():
 
         async with aiofiles.open(file_path) as file:
             lines = await file.readlines()
+            cnt = 0
             for line in lines:
                 if line.startswith('#'):
                     continue
@@ -45,13 +46,22 @@ class FileService():
                 #                timestamp=date, displacement=float(y)))
 
                 data += f"({x}, '{date.strftime("%Y-%m-%d %H:%M:%S%z")}', '{date}', {float(y)}), "
-
-            return data.rstrip(', ')
+                cnt += 1
+                if cnt == 20:
+                    cnt = 0
+                    insert = await fillDB(data)
+                    if not insert:
+                        return False
+            if cnt > 0:
+                cnt = 0
+                insert = await fillDB(data)
+                if not insert:
+                    return False
+            return True
 
     async def write_file(self, file_path: AsyncPath):
         if not "working.dat" in file_path.name:
-            data = await self.read_file(file_path)
-            insert = await fillDB(data)
+            insert = await self.read_file(file_path)
             if insert:
                 logger.info("Insert Ok move file")
                 await move(file_path, self.des_pathData)
