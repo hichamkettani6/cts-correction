@@ -17,7 +17,7 @@ database = os.environ.get("POSTGRES_DB")
 dbhost = os.environ.get("POSTGRES_DBHOST")
 SQLALCHEMY_DATABASE_URL = f"postgresql+asyncpg://{quote(username)}:{quote(password)}@{dbhost}/{quote(database)}"
 
-engine = create_async_engine(SQLALCHEMY_DATABASE_URL, echo=True)
+engine = create_async_engine(SQLALCHEMY_DATABASE_URL)
 async_session = sessionmaker(bind=engine, expire_on_commit=False, class_=AsyncSession)
 
 
