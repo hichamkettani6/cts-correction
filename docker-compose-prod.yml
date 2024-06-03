@@ -39,7 +39,6 @@ services:
 #      - "5432:5432"
     volumes:
       - /hrog_db:/var/lib/postgresql/data
-    user: 999
     networks:
       - irevs_cts_net
     restart: always
