@@ -2,19 +2,19 @@ FROM python:3.12
 
 ENV PYTHONPATH="/app"
 
-RUN pip install --no-cache --upgrade fastapi
-RUN pip install --no-cache --upgrade pydantic
-RUN pip install --no-cache --upgrade uvicorn
-RUN pip install --no-cache --upgrade aiopath
-RUN pip install --no-cache --upgrade aiofiles
-RUN pip install --no-cache --upgrade uvloop
-RUN pip install --no-cache --upgrade plotly
-RUN pip install --no-cache --upgrade pandas
-RUN pip install --no-cache --upgrade matplotlib
-RUN pip install --no-cache --upgrade jinja2
-RUN pip install --no-cache --upgrade sqlmodel
-RUN pip install --no-cache --upgrade asyncpg
-RUN pip install --no-cache --upgrade pyinotify
-RUN pip install --no-cache --upgrade pyasyncore
+RUN pip install  --upgrade fastapi
+RUN pip install  --upgrade pydantic
+RUN pip install  --upgrade uvicorn
+RUN pip install  --upgrade aiopath
+RUN pip install  --upgrade aiofiles
+RUN pip install  --upgrade uvloop
+RUN pip install  --upgrade plotly
+RUN pip install  --upgrade pandas
+RUN pip install  --upgrade matplotlib
+RUN pip install  --upgrade jinja2
+RUN pip install  --upgrade sqlmodel
+RUN pip install  --upgrade asyncpg
+RUN pip install  --upgrade pyinotify
+RUN pip install  --upgrade pyasyncore
 
-CMD ["uvicorn", "app.hrog_correction_jup:app", "--reload", "--host", "0.0.0.0", "--port", "80", "--proxy-headers", "--forwarded-allow-ips='*'"]
+CMD ["uvicorn", "app.hrog_correction_jup:app", "--host", "0.0.0.0", "--port", "80", "--proxy-headers", "--forwarded-allow-ips='*'"]

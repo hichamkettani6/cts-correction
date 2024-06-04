@@ -13,7 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from model import DisData, Range
 from sql_util import createDB, query_pattern, queryFromDB
-from fileService import FileService, ObserverManager
+from fileService import FileService
 from fastapi.middleware.cors import CORSMiddleware
 from urllib.parse import unquote
 from datetime import datetime
