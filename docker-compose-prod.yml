@@ -13,8 +13,6 @@ services:
       - ./.env
     ports:
       - "8011:80"
-    networks:
-      - irevs_cts_net
     depends_on:
       database:
         condition: service_healthy
@@ -40,13 +38,8 @@ services:
     volumes:
       - ./hrog_db:/var/lib/postgresql/data 777
     user: "root"
-    networks:
-      - irevs_cts_net
     restart: always
     logging:
       options:
         max-size: 10m
 
-networks:
-  irevs_cts_net:
-    external: true
