@@ -39,7 +39,7 @@ LOGGING_CONFIG = {
     },
     "loggers": {
         "": {  # root logger
-            "level": ROOT_LEVEL, #"INFO",
+            "level": ROOT_LEVEL,  # "INFO",
             "handlers": ["default"],
             "propagate": False,
         },
@@ -75,15 +75,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-@app.on_event("startup")
-async def on_startup():
-    asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
-    await asyncio.gather(createDB(), FileService.create_dirs(PATHS.values()))
-
-@app.on_event("shutdown")
-async def on_shutdown():
-    await ObserverManager.down()
+# autoload file
+# @app.on_event("startup")
+# async def on_startup():
+#     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+#     await asyncio.gather(createDB(), FileService.create_dirs(PATHS.values()))
+#
+#
+# @app.on_event("shutdown")
+# async def on_shutdown():
+#     await ObserverManager.down()
 
 
 @app.middleware('http')
@@ -109,9 +110,11 @@ async def write_data_toDB(request: Request):
         return {"status": 200, "detail": "Observer is already up!"}
 
     fileService = request.scope.get("fileService")
-    asyncio.gather(ObserverManager(fileService).start_observer(),
-                    fileService.process_existing_files())
-
+    # asyncio.gather(
+    #     ObserverManager(fileService).start_observer(),
+    #     fileService.process_existing_files()
+    # )
+    await fileService.process_existing_files()
     return {"status": 200}
 
 
@@ -157,8 +160,8 @@ async def get_graph_data(request: Request,
 @app.get("/graph-data-html", response_class=HTMLResponse)
 async def get_graph_data_html(
         request: Request,
-        dtime_start: str="",
-        dtime_end: str="",
+        dtime_start: str = "",
+        dtime_end: str = "",
         automake: bool = False):
     templates = request.scope.get("templates")
     timezone = os.environ.get("TZ")
