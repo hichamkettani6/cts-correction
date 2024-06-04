@@ -36,8 +36,7 @@ services:
 #    ports:
 #      - "5432:5432"
     volumes:
-      - /hrog_db:/var/lib/postgresql/data 777
-      #- ./db_data:/var/lib/postgresql/data
+      - ./db_data:/var/lib/postgresql/data
     restart: always
     logging:
       options:
