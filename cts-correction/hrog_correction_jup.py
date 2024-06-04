@@ -78,10 +78,10 @@ app.add_middleware(
 )
 
 # autoload file
-# @app.on_event("startup")
-# async def on_startup():
-#
-#     await asyncio.gather(createDB(), FileService.create_dirs(PATHS.values()))
+@app.on_event("startup")
+async def on_startup():
+  await createDB()
+#     await asyncio.gather(, FileService.create_dirs(PATHS.values()))
 #
 #
 # @app.on_event("shutdown")
