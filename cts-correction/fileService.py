@@ -48,15 +48,13 @@ class FileService():
 
                 data += f"({x}, '{date.strftime("%Y-%m-%d %H:%M:%S%z")}', '{date}', {float(y)}), "
                 cnt += 1
-                if cnt == 20:
+                if cnt == 50:
                     cnt = 0
-                    insert = await fillDB(data.rstrip(', '))
-                    if not insert:
+                    if not await fillDB(data.rstrip(', ')):
                         return False
             if cnt > 0:
                 cnt = 0
-                insert = await fillDB(data.rstrip(', '))
-                if not insert:
+                if not  await fillDB(data.rstrip(', ')):
                     return False
             return True
 
