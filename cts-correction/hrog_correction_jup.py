@@ -21,6 +21,8 @@ from zoneinfo import ZoneInfo
 import logging
 import logging.config
 
+asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+
 ROOT_LEVEL = "INFO"
 
 LOGGING_CONFIG = {
@@ -78,7 +80,7 @@ app.add_middleware(
 # autoload file
 # @app.on_event("startup")
 # async def on_startup():
-#     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+#
 #     await asyncio.gather(createDB(), FileService.create_dirs(PATHS.values()))
 #
 #
@@ -105,9 +107,9 @@ async def dataToDB_handler(request: Request, call_next):
 @app.get("/write_toDB")
 async def write_data_toDB(request: Request):
     logger.info("write_data_toDB")
-    if await ObserverManager.is_up():
-        logger.info("Observer is already up!")
-        return {"status": 200, "detail": "Observer is already up!"}
+    # if await ObserverManager.is_up():
+    #     logger.info("Observer is already up!")
+    #     return {"status": 200, "detail": "Observer is already up!"}
 
     fileService = request.scope.get("fileService")
     # asyncio.gather(
