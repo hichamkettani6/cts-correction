@@ -48,7 +48,7 @@ class FileService():
 
                 data += f"({x}, '{date.strftime("%Y-%m-%d %H:%M:%S%z")}', '{date}', {float(y)}), "
                 cnt += 1
-                if cnt == 50:
+                if cnt == 1000:
                     cnt = 0
                     if not await fillDB(data.rstrip(', ')):
                         return False
