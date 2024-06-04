@@ -81,6 +81,7 @@ app.add_middleware(
 @app.on_event("startup")
 async def on_startup():
   await createDB()
+  await FileService.create_dirs(PATHS.values())
 #     await asyncio.gather(, FileService.create_dirs(PATHS.values()))
 #
 #
