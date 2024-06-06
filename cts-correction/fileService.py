@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 class FileService():
 
-    def __init__(self, pathData: str, des_pathData):
+    def __init__(self, pathData: str, des_pathData: str):
         self.pathData = pathData
         self.des_pathData = des_pathData
 
@@ -42,11 +42,12 @@ class FileService():
                 x_unix = (x - 40587) * 86400
                 date = datetime.fromtimestamp(
                     x_unix, tz=ZoneInfo('UTC')).replace(microsecond=False)
+                y = float(y) * 10**9
 
                 # data.append(DisData(MJD_date=x, date_utc=date.strftime("%Y-%m-%d %H:%M:%S%z"),
                 #                timestamp=date, displacement=float(y)))
 
-                data += f"({x}, '{date.strftime("%Y-%m-%d %H:%M:%S%z")}', '{date}', {float(y)}), "
+                data += f"({x}, '{date.strftime("%Y-%m-%d %H:%M:%S%z")}', '{date}', {y}), "
                 cnt += 1
                 if cnt == 1000:
                     cnt = 0
@@ -63,7 +64,7 @@ class FileService():
             insert = await self.read_file(file_path)
             if insert:
                 logger.info("Insert Ok move file")
-                await move(file_path, self.des_pathData)
+                await self.move_file(file_path)
 
     async def process_existing_files(self):
         paths = await self.get_paths()
@@ -72,6 +73,12 @@ class FileService():
             logger.info(f"process file {path.name}")
             await self.write_file(path)
         # [await self.write_file(path) for path in paths]
+        
+    async def move_file(self, src_path: AsyncPath):
+        dst_path = AsyncPath(f"{self.des_pathData}/{src_path.name}")
+        await AsyncPath.unlink(dst_path, missing_ok=True)
+        await move(src_path, dst_path)
+
 
     @staticmethod
     async def create_dirs(dirs):
