@@ -391,30 +391,31 @@
 
                             let src_cts = src.data[0];
 
-
                             let diff_cts = diff.data[0];
-
 
                             src.data[0].x = src_cts.x.concat(diff_cts.x)
                             src.data[0].y = src_cts.y.concat(diff_cts.y)
-
-                            Plotly.restyle('graph-' + src.graph_id, {
-                                x: [src.data[0].x],
-                                y: [src.data[0].y]
-                            });
 
                             min = diff.data[0].y.length === 0 ? min : Math.min(...diff.data[0].y.concat(min));
                             max = diff.data[0].y.length === 0 ? max : Math.max(...diff.data[0].y.concat(max));
                             let margin = 0.5;
 
-
-                            Plotly.relayout('graph-' + src.graph_id,
+                            Plotly.react('graph-' + src.graph_id,
+                                [{
+                                    x: src.data[0].x,
+                                    y: src.data[0].y
+                                }],
                                 {
-                                    'yaxis.range': [min - margin, max + margin],
-                                    'xaxis.magin.pad': 4,
-                                    'xaxis.magin.l': 30
-                                },
-                            )
+                                    yaxis: { range: [min - margin, max + margin] },
+                                    xaxis: {
+                                        margin: {
+                                            pad: 4,
+                                            l: 30 
+                                        }
+                                    }
+                                }
+                            );
+
 
                         }
                     }
