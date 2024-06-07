@@ -11,7 +11,8 @@
         </div>
     {% endif %}
 
-    <form class="form-horizontal" {% if automake %} style="display: none" {% endif %}>
+    <form class="form-horizontal" {% if automake %}
+          style="display: none" {% endif %}>
         <!-- Experiment select -->
         <div class="form-group {% if automake %} invisible {% endif %}">
             <label class="col-sm-2" for="exp">Experiment</label>
@@ -391,18 +392,24 @@
 
                             src.data[0].x = src_cts.x.concat(diff_cts.x)
                             src.data[0].y = src_cts.y.concat(diff_cts.y)
-                            
+
                             Plotly.restyle('graph-' + src.graph_id, {
                                 x: [src.data[0].x],
                                 y: [src.data[0].y]
-                                });
+                            });
 
-                            //let min = src.data[0].y.length === 0 ? 0 : Math.min(...src.data[0].y);
-                            //let max = src.data[0].y.length === 0 ? 0 : Math.max(...src.data[0].y);
-                            //let margin = 1;
+                            let min = src.data[0].y.length === 0 ? 0 : Math.min(...src.data[0].y);
+                            let max = src.data[0].y.length === 0 ? 0 : Math.max(...src.data[0].y);
+                            let margin = 0.5;
+                            let minx = src.data[0].x.length === 0 ? 0 : Math.min(...src.data[0].x);
+                            let maxx = src.data[0].x.length === 0 ? 0 : Math.max(...src.data[0].x);
+                            let marginx = 0.5;
 
-                            Plotly.relayout('graph-' + src.graph_id
-                            // {'yaxis.range':[min-margin, max+margin]},
+                            Plotly.relayout('graph-' + src.graph_id,
+                                {
+                                    'yaxis.range': [min - margin, max + margin],
+                                    'xaxis.range': [minx - marginx, maxx + marginx]
+                                },
                             )
 
                         }
