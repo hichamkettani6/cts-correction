@@ -223,6 +223,8 @@
         let queue = [];
         let queue_index = null;
         let canceled = false;
+        let min = Number.MAX_VALUE;
+        let max = Number.MIN_VALUE;
 
         function generate() {
             try {
@@ -399,8 +401,8 @@
                                 y: [src.data[0].y]
                             });
 
-                            let min = src.data[0].y.length === 0 ? 0 : Math.min(...src.data[0].y);
-                            let max = src.data[0].y.length === 0 ? 0 : Math.max(...src.data[0].y);
+                            min = diff.data[0].y.length === 0 ? min : Math.min(...diff.data[0].y.concat(min));
+                            max = diff.data[0].y.length === 0 ? max : Math.max(...diff.data[0].y.concat(max));
                             let margin = 0.5;
 
 
