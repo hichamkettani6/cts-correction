@@ -403,12 +403,12 @@
                             let margin = 0.5;
                             let minx = src.data[0].x.length === 0 ? 0 : Math.min(...src.data[0].x);
                             let maxx = src.data[0].x.length === 0 ? 0 : Math.max(...src.data[0].x);
-                            let marginx = 0.5;
+                            let marginx = 1.5;
 
                             Plotly.relayout('graph-' + src.graph_id,
                                 {
                                     'yaxis.range': [min - margin, max + margin],
-                                    'xaxis.range': [minx - marginx, maxx + marginx]
+                                    'xaxis.range': [minx + marginx, maxx ]
                                 },
                             )
 
