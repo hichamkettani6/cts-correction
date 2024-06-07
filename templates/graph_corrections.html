@@ -401,7 +401,7 @@
                             let max = src.data[0].y.length === 0 ? 0 : Math.max(...src.data[0].y);
                             let margin = 1;
 
-                            Plotly.relayout('graph-' + src.graph_id,
+                            Plotly.relayout('graph-' + src.graph_id,automargin=True,
                              {'yaxis.range':[min-margin, max+margin]})
 
                         }
