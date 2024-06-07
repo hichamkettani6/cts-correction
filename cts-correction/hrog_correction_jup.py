@@ -77,11 +77,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # autoload file
 @app.on_event("startup")
 async def on_startup():
-  await createDB()
-  await FileService.create_dirs(PATHS.values())
+    await createDB()
+    await FileService.create_dirs(PATHS.values())
+
+
 #     await asyncio.gather(, FileService.create_dirs(PATHS.values()))
 #
 #
@@ -144,8 +147,8 @@ async def get_graph_data(request: Request,
             "name": "UTC(IT) vs UTC(IT)_CTS", }],
         'layout': {
             "title": "CTS Disciplining Capabilities Validation",
-            "xaxis": {"title": 'Time [s]', },
-            "yaxis": {"title": 'Time Displacements [ns]',},
+            "xaxis": {"title": 'Time [s]', "automargin": True},
+            "yaxis": {"title": 'Time Displacements [ns]', "automargin": True},
             "legend": {
                 "x": 1,
                 "y": 1,
