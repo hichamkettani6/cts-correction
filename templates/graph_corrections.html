@@ -295,6 +295,8 @@
             generate();
         {%  else %}
             $('#generate-button').on('click', function () {
+                min = Number.MAX_VALUE;
+                max = Number.MIN_VALUE;
                 generate();
             });
         {%  endif %}
