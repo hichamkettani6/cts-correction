@@ -397,12 +397,13 @@
                                 y: [src.data[0].y]
                                 });
 
-                            let min = src.data[0].y.length === 0 ? 0 : Math.min(...src.data[0].y);
-                            let max = src.data[0].y.length === 0 ? 0 : Math.max(...src.data[0].y);
-                            let margin = 1;
+                            //let min = src.data[0].y.length === 0 ? 0 : Math.min(...src.data[0].y);
+                            //let max = src.data[0].y.length === 0 ? 0 : Math.max(...src.data[0].y);
+                            //let margin = 1;
 
-                            Plotly.relayout('graph-' + src.graph_id,automargin=true,
-                             {'yaxis.range':[min-margin, max+margin]})
+                            Plotly.relayout('graph-' + src.graph_id
+                            // {'yaxis.range':[min-margin, max+margin]},
+                            )
 
                         }
                     }
