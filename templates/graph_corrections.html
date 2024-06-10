@@ -405,7 +405,7 @@
 
                             min = diff.data[0].y.length === 0 ? min : Math.min(...diff.data[0].y.concat(min));
                             max = diff.data[0].y.length === 0 ? max : Math.max(...diff.data[0].y.concat(max));
-                            let margin = 0.5;
+                            let margin = 1;
 
 
                             Plotly.relayout('graph-' + src.graph_id,
