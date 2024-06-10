@@ -60,9 +60,9 @@ class FileService():
             return True
 
     async def write_file(self, file_path: AsyncPath):
-        if not "working.dat" in file_path.name:
-            insert = await self.read_file(file_path)
-            if insert:
+        insert = await self.read_file(file_path)
+        if insert:
+            if not "working.dat" in file_path.name:
                 logger.info("Insert Ok move file")
                 await self.move_file(file_path)
 
