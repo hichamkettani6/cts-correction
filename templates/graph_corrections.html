@@ -225,6 +225,7 @@
         let canceled = false;
         let min = Number.MAX_VALUE;
         let max = Number.MIN_VALUE;
+	let userInteracted = false;
 
         function generate() {
             try {
@@ -297,6 +298,8 @@
             $('#generate-button').on('click', function () {
                 min = Number.MAX_VALUE;
                 max = Number.MIN_VALUE;
+		userInteracted = false;
+
                 generate();
             });
         {%  endif %}
@@ -378,6 +381,19 @@
                         <form class="form-horizontal"><div class="progress"><div id="progress-bar" class="progress-bar" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" style="width: 0%;">0%</div></div>
                     `));
                         Plotly.newPlot('graph-' + graph_data.graph_id, graph_data.data, graph_data.layout);
+
+                        const graphDiv = document.getElementById('graph-' + graph_data.graph_id);
+
+                        graphDiv.on('plotly_relayout', function(eventData) {
+                            if ('xaxis.autorange' in eventData && 'yaxis.autorange' in eventData) {
+                                userInteracted = false;
+                            }
+                            // if zoom in:
+                            else if (('xaxis.range[0]' in eventData && 'xaxis.range[1]' in eventData) ||
+                                       ('yaxis.range[0]' in eventData && 'yaxis.range[1]' in eventData)) {
+                                userInteracted = true;
+                            }
+                        });
                     });
                 } else {
                     // 2回目以降の場合
@@ -391,32 +407,40 @@
 
                             let src_cts = src.data[0];
 
+
                             let diff_cts = diff.data[0];
+
 
                             src.data[0].x = src_cts.x.concat(diff_cts.x)
                             src.data[0].y = src_cts.y.concat(diff_cts.y)
 
-                            min = diff.data[0].y.length === 0 ? min : Math.min(...diff.data[0].y.concat(min));
-                            max = diff.data[0].y.length === 0 ? max : Math.max(...diff.data[0].y.concat(max));
-                            let margin = 0.5;
 
-                            Plotly.react('graph-' + src.graph_id,
-                                [{
-                                    x: src.data[0].x,
-                                    y: src.data[0].y
-                                }],
-                                {
-                                    yaxis: { range: [min - margin, max + margin] },
-                                    xaxis: {
-                                        margin: {
-                                            pad: 4,
-                                            l: 30 
+
+                            if (userInteracted){
+                                Plotly.restyle('graph-' + src.graph_id, {
+                                    x: [src.data[0].x],
+                                    y: [src.data[0].y]
+                                });
+                            } else {
+                                min = diff.data[0].y.length === 0 ? min : Math.min(...diff.data[0].y.concat(min));
+                                max = diff.data[0].y.length === 0 ? max : Math.max(...diff.data[0].y.concat(max));
+                                let margin = 0.5;
+
+                                Plotly.react('graph-' + src.graph_id,
+                                    [{
+                                        x: src.data[0].x,
+                                        y: src.data[0].y
+                                    }],
+                                    {
+                                        yaxis: { range: [min - margin, max + margin] },
+                                        xaxis: {
+                                            margin: {
+                                                pad: 4,
+                                                l: 30
+                                            }
                                         }
-                                    }
-                                }
-                            );
-
-
+                                    });
+                            }
                         }
                     }
                 }
