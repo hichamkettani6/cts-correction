@@ -225,7 +225,7 @@
         let canceled = false;
         let min = Number.MAX_VALUE;
         let max = Number.MIN_VALUE;
-	let userInteracted = false;
+	    let userInteracted = false;
 
         function generate() {
             try {
@@ -298,7 +298,7 @@
             $('#generate-button').on('click', function () {
                 min = Number.MAX_VALUE;
                 max = Number.MIN_VALUE;
-		userInteracted = false;
+		        userInteracted = false;
 
                 generate();
             });
