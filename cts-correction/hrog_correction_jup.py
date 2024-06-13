@@ -147,8 +147,8 @@ async def get_graph_data(request: Request,
             "name": "UTC(IT) vs UTC(IT)_CTS", }],
         'layout': {
             "title": "CTS Disciplining Capabilities Validation",
-            "xaxis": {"title": 'Time [s]', "automargin": True},
-            "yaxis": {"title": 'Time Displacements [ns]', "automargin": True},
+            "xaxis": {"title": 'Time/days', "automargin": True},
+            "yaxis": {"title": 'Time Difference/ns', "automargin": True},
             "legend": {
                 "x": 1,
                 "y": 1,
