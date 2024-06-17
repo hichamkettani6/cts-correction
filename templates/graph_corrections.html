@@ -384,7 +384,7 @@
 
                         const graphDiv = document.getElementById('graph-' + graph_data.graph_id);
 
-                        $(graphDiv).off('plotly_relayout');
+                        //$(graphDiv).off('plotly_relayout');
                         graphDiv.on('plotly_relayout', function(eventData) {
                             if ('xaxis.autorange' in eventData && 'yaxis.autorange' in eventData) {
                                 userInteracted = false;
@@ -415,31 +415,26 @@
                             src.data[0].x = src_cts.x.concat(diff_cts.x)
                             src.data[0].y = src_cts.y.concat(diff_cts.y)
 
-                            if (userInteracted){
-                                Plotly.restyle('graph-' + src.graph_id, {
-                                    x: [src.data[0].x],
-                                    y: [src.data[0].y]
-                                });
-                            } else {
-                                min = diff.data[0].y.length === 0 ? min : Math.min(...diff.data[0].y.concat(min));
-                                max = diff.data[0].y.length === 0 ? max : Math.max(...diff.data[0].y.concat(max));
+                            min = diff.data[0].y.length === 0 ? min : Math.min(...diff.data[0].y.concat(min));
+                            max = diff.data[0].y.length === 0 ? max : Math.max(...diff.data[0].y.concat(max));
+
+                            Plotly.restyle('graph-' + src.graph_id, {
+                                x: [src.data[0].x],
+                                y: [src.data[0].y]
+                            });
+
+                            if (!userInteracted){
                                 let margin = 1;
 
-                                Plotly.react('graph-' + src.graph_id,
-                                    [{
-                                        x: src.data[0].x,
-                                        y: src.data[0].y
-                                    }],
+                                Plotly.relayout('graph-' + src.graph_id,
                                     {
-                                        yaxis: { range: [min - margin, max + margin] },
-                                        xaxis: {
-                                            margin: {
-                                                pad: 4,
-                                                l: 30
-                                            }
-                                        }
-                                    });
+                                        'yaxis.range': [min - margin, max + margin],
+                                        'xaxis.magin.pad': 4,
+                                        'xaxis.magin.l': 30
+                                    },
+                                )
                             }
+
                         }
                     }
                 }
